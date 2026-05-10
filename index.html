@@ -400,6 +400,7 @@ function persistKey(val) {
   if (!val) {
     const existing = loadKey();
     if (existing) document.getElementById('api-key-input').value = existing;
+    updateKeyUI();
     return;
   }
   saveKey(val);
