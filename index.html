@@ -323,7 +323,7 @@ async function scanCard() {
     }
     buildReviewForm(); showState("review");
   } catch(err) {
-    const msg = (err instanceof TypeError)
+    const msg = (err instanceof TypeError && /fetch|NetworkError/i.test(err.message))
       ? "Couldn't reach the API — check your connection and try again."
       : (err.message || "Unknown error");
     document.getElementById("err-msg").textContent = msg;
