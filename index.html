@@ -323,7 +323,10 @@ async function scanCard() {
     }
     buildReviewForm(); showState("review");
   } catch(err) {
-    document.getElementById("err-msg").textContent = err.message || "Unknown error";
+    const msg = (err instanceof TypeError)
+      ? "Couldn't reach the API — check your connection and try again."
+      : (err.message || "Unknown error");
+    document.getElementById("err-msg").textContent = msg;
     document.getElementById("raw-section").style.display = "none";
     showState("error");
   }
