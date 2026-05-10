@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Card Scanner</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d9488">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -101,6 +103,12 @@
     opacity: 0; cursor: pointer; font-size: 0;
   }
   .b-disabled { background: #f3f4f6; color: #d1d5db; cursor: default; }
+  #key-saved { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 340px; }
+  .key-saved-text { font-size: 14px; color: #0f766e; font-weight: 500; }
+  .key-change-link { font-size: 13px; color: #0d9488; background: none; border: none; cursor: pointer; text-decoration: underline; padding: 0; font-family: inherit; }
+  #install-banner { width: 100%; max-width: 340px; background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 12px; padding: 12px 16px; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; }
+  #install-banner span { font-size: 13px; color: #0f766e; line-height: 1.4; }
+  #install-dismiss { background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 16px; padding: 0; flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -370,6 +378,10 @@ const saved = loadKey();
 if (saved) document.getElementById("api-key-input").value = saved;
 document.getElementById("api-key-input").addEventListener("change", e => saveKey(e.target.value.trim()));
 showState("idle");
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/card-scanner/service-worker.js', { scope: '/card-scanner/' })
+    .catch(err => console.warn('SW registration failed:', err));
+}
 </script>
 </body>
 </html>
