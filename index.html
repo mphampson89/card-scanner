@@ -140,6 +140,10 @@
       </div>
       <input type="file" accept="image/*" capture="environment" id="file-idle" onchange="onFile(this)">
     </div>
+    <div id="install-banner" style="display:none">
+      <span>To install: tap ⋮ → <strong>Install</strong> or <strong>Add to Home Screen</strong></span>
+      <button id="install-dismiss">✕</button>
+    </div>
     <p id="idle-note">Card data is sent to the Anthropic API and not stored.</p>
   </div>
   <div id="s-photo">
@@ -378,6 +382,28 @@ const saved = loadKey();
 if (saved) document.getElementById("api-key-input").value = saved;
 document.getElementById("api-key-input").addEventListener("change", e => saveKey(e.target.value.trim()));
 showState("idle");
+
+// Install banner — shown on Firefox; suppressed if Chrome fires beforeinstallprompt
+const DISMISSED_KEY = 'card_scanner_install_dismissed';
+let _deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredPrompt = e;
+  document.getElementById('install-banner').style.display = 'none';
+});
+
+setTimeout(() => {
+  if (!_deferredPrompt && !localStorage.getItem(DISMISSED_KEY)) {
+    document.getElementById('install-banner').style.display = 'flex';
+  }
+}, 300);
+
+document.getElementById('install-dismiss').addEventListener('click', () => {
+  document.getElementById('install-banner').style.display = 'none';
+  try { localStorage.setItem(DISMISSED_KEY, '1'); } catch(e) {}
+});
+
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/card-scanner/service-worker.js', { scope: '/card-scanner/' })
     .catch(err => console.warn('SW registration failed:', err));
