@@ -127,8 +127,14 @@
     </div>
     <p>Tap the button below to take a photo or choose one from your gallery.</p>
     <div id="api-key-section">
-      <label for="api-key-input">Anthropic API Key (saved on this device)</label>
-      <input type="password" id="api-key-input" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
+      <div id="key-entry">
+        <label for="api-key-input">Anthropic API Key (saved on this device)</label>
+        <input type="password" id="api-key-input" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
+      </div>
+      <div id="key-saved" style="display:none">
+        <span class="key-saved-text">API key saved ✓</span>
+        <button id="key-change-btn" class="key-change-link">Change</button>
+      </div>
     </div>
     <div class="pick-wrap">
       <div class="pick-face">
@@ -279,9 +285,8 @@ async function onFile(input) {
   }
 }
 async function scanCard() {
-  const key = document.getElementById("api-key-input").value.trim();
+  const key = loadKey() || document.getElementById("api-key-input").value.trim();
   if (!key) { alert("Paste your Anthropic API key first."); return; }
-  saveKey(key);
   if (!imgB64) return;
   showState("scan");
   try {
@@ -378,9 +383,45 @@ function resetToIdle() {
   wrap.appendChild(inp);
   showState("idle");
 }
-const saved = loadKey();
-if (saved) document.getElementById("api-key-input").value = saved;
-document.getElementById("api-key-input").addEventListener("change", e => saveKey(e.target.value.trim()));
+// API key UI
+let _keyDebounce;
+
+function updateKeyUI() {
+  const key = loadKey();
+  document.getElementById('key-entry').style.display = key ? 'none' : 'block';
+  document.getElementById('key-saved').style.display = key ? 'flex' : 'none';
+}
+
+function persistKey(val) {
+  val = (val || '').trim();
+  if (!val) {
+    const existing = loadKey();
+    if (existing) document.getElementById('api-key-input').value = existing;
+    return;
+  }
+  saveKey(val);
+  updateKeyUI();
+}
+
+const keyInput = document.getElementById('api-key-input');
+const savedKey = loadKey();
+if (savedKey) keyInput.value = savedKey;
+updateKeyUI();
+
+keyInput.addEventListener('blur', () => persistKey(keyInput.value));
+keyInput.addEventListener('keydown', e => { if (e.key === 'Enter') persistKey(keyInput.value); });
+keyInput.addEventListener('input', () => {
+  clearTimeout(_keyDebounce);
+  _keyDebounce = setTimeout(() => persistKey(keyInput.value), 600);
+});
+
+document.getElementById('key-change-btn').addEventListener('click', () => {
+  keyInput.value = loadKey() || '';
+  document.getElementById('key-entry').style.display = 'block';
+  document.getElementById('key-saved').style.display = 'none';
+  setTimeout(() => keyInput.focus(), 50);
+});
+
 showState("idle");
 
 // Install banner — shown on Firefox; suppressed if Chrome fires beforeinstallprompt
