@@ -14,7 +14,7 @@ export default function App() {
   if (!unlocked) return <PinGate onUnlock={() => setUnlocked(true)} />
   return (
     <>
-      <div style={{ paddingBottom: 88 }}>
+      <main style={{ paddingBottom: 88 }}>
         <Routes>
           <Route path="/" element={<Library />} />
           <Route path="/scan" element={<Capture />} />
@@ -22,7 +22,7 @@ export default function App() {
           <Route path="/contact/:id" element={<Contact />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
-      </div>
+      </main>
       <TabBar />
     </>
   )
