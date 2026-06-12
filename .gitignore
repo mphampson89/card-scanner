@@ -1,3 +1,5 @@
 generate-icons.html
 generate-icons.js
 *.local.html
+node_modules/
+dist/
