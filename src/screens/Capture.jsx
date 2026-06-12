@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { resizeImage } from '../lib/camera.js'
+import Segmented from '../components/Segmented.jsx'
 
 export default function Capture() {
   const nav = useNavigate()
@@ -21,10 +22,9 @@ export default function Capture() {
     <div style={{ padding: '28px 18px 0' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1 style={{ fontSize: 28, fontWeight: 600, margin: 0 }}>Scan a card</h1>
-        <label style={{ fontSize: 13, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-          <input type="checkbox" checked={batch} onChange={(e) => setBatch(e.target.checked)}
-            style={{ accentColor: 'var(--accent)', width: 16, height: 16 }} /> Batch
-        </label>
+        <Segmented ariaLabel="Capture mode" value={batch ? 'batch' : 'single'}
+          onChange={(v) => setBatch(v === 'batch')}
+          options={[{ value: 'single', label: 'Single' }, { value: 'batch', label: 'Batch' }]} />
       </div>
 
       <div style={{ marginTop: 22, borderRadius: 20, aspectRatio: '16/10',

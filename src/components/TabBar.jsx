@@ -22,7 +22,7 @@ export default function TabBar() {
           return (
             <button key={t.to} onClick={() => nav(t.to)} aria-label="Scan a card"
               className="btn-primary"
-              style={{ width: 56, height: 56, borderRadius: 20, marginTop: -20, padding: 0,
+              style={{ width: 56, height: 56, borderRadius: 20, padding: 0,
                 fontSize: 26, fontWeight: 400, lineHeight: 1, boxShadow: 'var(--shadow-pop)' }}>+</button>
           )
         }
