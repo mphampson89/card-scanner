@@ -1,25 +1,28 @@
 :root {
   color-scheme: dark;
-  --bg: #0f1014; --surface: #1a1b22; --surface-2: #2a2b33;
-  --text: #f2efe8; --text-2: #97968f; --text-3: #6a6a66;
-  --accent: #e0a94a; --accent-ink: #1a1306;
-  --ok: #56c9a4; --warn: #e7b257; --line: rgba(255,255,255,.07);
-  /* tinted, warm shadows — light reads from above, gold ambient bleed */
+  /* Surveyor palette — cool graphite ground, paper text, steel data ink, amber accent */
+  --bg: #14171b; --surface: #1b2026; --surface-2: #262c33;
+  --text: #e9eae4; --text-2: #9aa2aa; --text-3: #687077;
+  --accent: #f9a31a; --accent-ink: #3a2502;
+  --ink-data: #7e9db4;
+  --ok: #56c9a4; --warn: #cf6b5a; --line: rgba(233,238,243,.08);
+  /* tinted shadows — light reads from above, amber ambient bleed */
   --shadow-sm: 0 1px 1px rgba(0,0,0,.35);
-  --shadow-md: 0 2px 4px rgba(0,0,0,.35), 0 14px 32px -18px rgba(224,169,74,.16);
-  --shadow-pop: 0 6px 14px -4px rgba(0,0,0,.5), 0 0 0 1px rgba(224,169,74,.22);
+  --shadow-md: 0 2px 4px rgba(0,0,0,.35), 0 14px 32px -18px rgba(249,163,26,.15);
+  --shadow-pop: 0 6px 14px -4px rgba(0,0,0,.5), 0 0 0 1px rgba(249,163,26,.2);
   --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
   --r-sm: 10px; --r-md: 14px; --r-lg: 20px;
 }
 [data-theme='light'] {
   color-scheme: light;
-  --bg: #f6f3ec; --surface: #ffffff; --surface-2: #eae6dc;
-  --text: #1b1b1f; --text-2: #6f6e66; --text-3: #97968f;
-  --accent: #cf9b34; --accent-ink: #ffffff;
-  --ok: #2c7d62; --warn: #8a6618; --line: rgba(0,0,0,.08);
-  --shadow-sm: 0 1px 1px rgba(40,30,10,.06);
-  --shadow-md: 0 2px 6px rgba(40,30,10,.06), 0 16px 36px -20px rgba(207,155,52,.28);
-  --shadow-pop: 0 8px 18px -6px rgba(40,30,10,.18), 0 0 0 1px rgba(207,155,52,.3);
+  --bg: #eceee9; --surface: #ffffff; --surface-2: #e1e4df;
+  --text: #23272b; --text-2: #6d7378; --text-3: #98a0a6;
+  --accent: #f9a31a; --accent-ink: #3a2502;
+  --ink-data: #56707f;
+  --ok: #2c7d62; --warn: #9c3f33; --line: rgba(35,39,43,.1);
+  --shadow-sm: 0 1px 1px rgba(25,30,35,.06);
+  --shadow-md: 0 2px 6px rgba(25,30,35,.06), 0 16px 36px -20px rgba(249,163,26,.24);
+  --shadow-pop: 0 8px 18px -6px rgba(25,30,35,.18), 0 0 0 1px rgba(249,163,26,.28);
 }
 
 * { box-sizing: border-box; }
@@ -48,7 +51,7 @@ h1, h2, h3 { letter-spacing: -0.03em; line-height: 1.05; text-wrap: balance; }
 
 /* tabular figures for any data — counts, phones, postal codes */
 .num { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
-  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--ink-data); }
 
 button { font-family: inherit; cursor: pointer; }
 

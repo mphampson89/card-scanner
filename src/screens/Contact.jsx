@@ -65,7 +65,7 @@ export default function Contact() {
               <div style={{ display: 'flex', gap: 10 }}>
                 <button className="btn-ghost" onClick={() => setConfirmDel(false)}>Cancel</button>
                 <button className="btn-primary" onClick={remove}
-                  style={{ background: 'var(--warn)', color: '#1a1306', boxShadow: 'none' }}>Delete</button>
+                  style={{ background: 'var(--warn)', color: 'var(--bg)', boxShadow: 'none' }}>Delete</button>
               </div>
             </div>
           ) : (
