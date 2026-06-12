@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseExtraction } from './extract.js'
+import { parseExtraction } from '../netlify/functions/extract.js'
 
 describe('parseExtraction', () => {
   it('parses clean JSON and computes high confidence', () => {

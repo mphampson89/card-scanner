@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { neon } from '@neondatabase/serverless'
-import { rowToContact, contactToRow } from '../../shared/fields.js'
+import { rowToContact, contactToRow } from '../shared/fields.js'
 
 const dbUrl = process.env.DATABASE_URL_TEST
 const run = dbUrl ? describe : describe.skip
