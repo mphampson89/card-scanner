@@ -66,19 +66,36 @@ export default function Review() {
     nav('/')
   }
 
-  if (loading) return <p style={{ padding: 48, textAlign: 'center', color: 'var(--text-2)' }}>Reading {shots.length > 1 ? 'cards' : 'card'}…</p>
+  if (loading) return (
+    <div style={{ padding: '28px 18px 0' }} aria-busy="true" aria-label={`Reading ${shots.length > 1 ? 'cards' : 'card'}`}>
+      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 4 }}>Reading {shots.length > 1 ? 'cards' : 'card'}…</h1>
+      <p style={{ color: 'var(--text-2)', fontSize: 13, margin: '0 0 20px' }}>Pulling names, numbers and emails off the photo.</p>
+      {Array.from({ length: shots.length }).map((_, i) => (
+        <div key={i} style={{ marginBottom: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <div className="skel" style={{ width: 40, height: 40, borderRadius: 13 }} />
+            <div className="skel" style={{ width: '52%', height: 15 }} />
+          </div>
+          {[88, 70, 80].map((w, j) => (
+            <div key={j} className="skel" style={{ width: `${w}%`, height: 40, marginBottom: 10, borderRadius: 12 }} />
+          ))}
+        </div>
+      ))}
+    </div>
+  )
 
   const single = cards.length === 1
   return (
-    <div style={{ padding: '24px 18px 0' }}>
-      <h1 style={{ fontSize: 20, fontWeight: 600 }}>{single ? 'Review details' : `Review ${cards.length} cards`}</h1>
+    <div style={{ padding: '28px 18px 0' }}>
+      <h1 style={{ fontSize: 28, fontWeight: 600 }}>{single ? 'Review details' : `Review ${cards.length} cards`}</h1>
       {cards.map((card, idx) => (
         <div key={idx} style={{ borderTop: idx ? '1px solid var(--line)' : 'none', paddingTop: idx ? 16 : 8, marginTop: idx ? 16 : 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <strong style={{ fontSize: 14 }}>{`${card.fields.firstName} ${card.fields.lastName}`.trim() || 'Untitled card'}</strong>
-            <span style={{ fontSize: 11, fontWeight: 600,
-              color: card.confidence === 'high' ? 'var(--ok)' : 'var(--warn)' }}>
-              {card.confidence === 'high' ? 'High' : 'Check'}
+            <strong style={{ fontSize: 15 }}>{`${card.fields.firstName} ${card.fields.lastName}`.trim() || 'Untitled card'}</strong>
+            <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 999,
+              color: card.confidence === 'high' ? 'var(--ok)' : 'var(--warn)',
+              background: `color-mix(in srgb, ${card.confidence === 'high' ? 'var(--ok)' : 'var(--warn)'} 15%, transparent)` }}>
+              {card.confidence === 'high' ? 'High confidence' : 'Please check'}
             </span>
           </div>
           {card.dupe && (

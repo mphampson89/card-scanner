@@ -4,6 +4,12 @@
   --text: #f2efe8; --text-2: #97968f; --text-3: #6a6a66;
   --accent: #e0a94a; --accent-ink: #1a1306;
   --ok: #56c9a4; --warn: #e7b257; --line: rgba(255,255,255,.07);
+  /* tinted, warm shadows — light reads from above, gold ambient bleed */
+  --shadow-sm: 0 1px 1px rgba(0,0,0,.35);
+  --shadow-md: 0 2px 4px rgba(0,0,0,.35), 0 14px 32px -18px rgba(224,169,74,.16);
+  --shadow-pop: 0 6px 14px -4px rgba(0,0,0,.5), 0 0 0 1px rgba(224,169,74,.22);
+  --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+  --r-sm: 10px; --r-md: 14px; --r-lg: 20px;
 }
 [data-theme='light'] {
   color-scheme: light;
@@ -11,13 +17,99 @@
   --text: #1b1b1f; --text-2: #6f6e66; --text-3: #97968f;
   --accent: #cf9b34; --accent-ink: #ffffff;
   --ok: #2c7d62; --warn: #8a6618; --line: rgba(0,0,0,.08);
+  --shadow-sm: 0 1px 1px rgba(40,30,10,.06);
+  --shadow-md: 0 2px 6px rgba(40,30,10,.06), 0 16px 36px -20px rgba(207,155,52,.28);
+  --shadow-pop: 0 8px 18px -6px rgba(40,30,10,.18), 0 0 0 1px rgba(207,155,52,.3);
 }
+
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-#root { max-width: 480px; margin: 0 auto; min-height: 100dvh; }
-button { font-family: inherit; }
-.btn-primary { background: var(--accent); color: var(--accent-ink); border: none;
-  border-radius: 14px; padding: 14px; font-size: 16px; font-weight: 600; width: 100%; }
-.input { width: 100%; background: var(--surface); color: var(--text);
-  border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: 16px; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  color: var(--text);
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  /* ambient depth — a soft gold pool top-center over the off-black, not a flat fill */
+  background:
+    radial-gradient(120% 60% at 50% -8%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 60%),
+    var(--bg);
+  min-height: 100dvh;
+}
+/* fine grain so surfaces aren't sterile-flat — fixed, non-interactive, very subtle */
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+#root { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; min-height: 100dvh; }
+
+h1, h2, h3 { letter-spacing: -0.03em; line-height: 1.05; text-wrap: balance; }
+
+/* tabular figures for any data — counts, phones, postal codes */
+.num { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+
+button { font-family: inherit; cursor: pointer; }
+
+/* every interactive element gets a real focus ring for keyboard users */
+button:focus-visible, a:focus-visible, input:focus-visible, label:focus-within {
+  outline: none; box-shadow: var(--ring);
+}
+
+.btn-primary {
+  background: var(--accent); color: var(--accent-ink); border: none;
+  border-radius: var(--r-md); padding: 14px; font-size: 16px; font-weight: 600; width: 100%;
+  letter-spacing: -0.01em; box-shadow: var(--shadow-md);
+  transition: transform .12s ease, filter .18s ease, box-shadow .18s ease;
+}
+.btn-primary:hover { filter: brightness(1.06); }
+.btn-primary:active { transform: translateY(1px) scale(.985); box-shadow: var(--shadow-sm); }
+.btn-primary:disabled { opacity: .55; filter: saturate(.6); transform: none; cursor: default; }
+
+/* secondary / tertiary — quieter than a second filled button */
+.btn-ghost {
+  width: 100%; padding: 13px; border-radius: var(--r-md);
+  border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 60%, transparent);
+  color: var(--text); font-size: 15px; font-weight: 500;
+  transition: transform .12s ease, background .18s ease, border-color .18s ease;
+}
+.btn-ghost:hover { background: var(--surface-2); border-color: color-mix(in srgb, var(--accent) 30%, var(--line)); }
+.btn-ghost:active { transform: translateY(1px) scale(.985); }
+
+.input {
+  width: 100%; background: var(--surface); color: var(--text);
+  border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: 16px;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+.input::placeholder { color: var(--text-3); }
+.input:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); box-shadow: var(--ring); }
+
+/* tappable list row — quiet until touched */
+.row {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  background: none; border: none; border-bottom: 1px solid var(--line);
+  padding: 12px 8px; margin: 0 -8px; text-align: left; color: var(--text);
+  border-radius: var(--r-sm);
+  transition: background .15s ease, transform .1s ease;
+}
+.row:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.row:active { transform: scale(.99); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+
+.card {
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow-md);
+}
+
+/* skeleton shimmer for loading — matches the row layout instead of a spinner */
+.skel { position: relative; overflow: hidden; background: var(--surface-2); border-radius: var(--r-sm); }
+.skel::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(100deg, transparent 20%, color-mix(in srgb, var(--text) 7%, transparent) 50%, transparent 80%);
+  transform: translateX(-100%); animation: shimmer 1.25s ease-in-out infinite;
+}
+@keyframes shimmer { to { transform: translateX(100%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; scroll-behavior: auto; }
+}

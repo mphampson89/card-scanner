@@ -18,18 +18,22 @@ export default function Capture() {
   }
 
   return (
-    <div style={{ padding: '24px 18px 0' }}>
+    <div style={{ padding: '28px 18px 0' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>Scan card</h1>
-        <label style={{ fontSize: 13, color: 'var(--text-2)' }}>
-          <input type="checkbox" checked={batch} onChange={(e) => setBatch(e.target.checked)} /> Batch
+        <h1 style={{ fontSize: 28, fontWeight: 600, margin: 0 }}>Scan a card</h1>
+        <label style={{ fontSize: 13, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+          <input type="checkbox" checked={batch} onChange={(e) => setBatch(e.target.checked)}
+            style={{ accentColor: 'var(--accent)', width: 16, height: 16 }} /> Batch
         </label>
       </div>
 
-      <div style={{ marginTop: 24, border: '2px dashed var(--accent)', borderRadius: 16,
-        aspectRatio: '16/10', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      <div style={{ marginTop: 22, borderRadius: 20, aspectRatio: '16/10',
+        border: '2px dashed color-mix(in srgb, var(--accent) 50%, var(--line))',
+        background: 'radial-gradient(120% 100% at 50% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%)',
+        display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', justifyContent: 'center',
         color: 'var(--text-2)', fontSize: 13, textAlign: 'center', padding: 16 }}>
-        Align the card and take a clear, well-lit photo
+        <span aria-hidden style={{ fontSize: 30, color: 'var(--accent)' }}>⌗</span>
+        Align the card in good light and take a clear photo.
       </div>
 
       <label className="btn-primary" style={{ display: 'block', textAlign: 'center', marginTop: 18 }}>
