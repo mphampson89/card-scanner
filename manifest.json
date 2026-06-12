@@ -1,9 +1,9 @@
 {
-  "id": "/card-scanner/",
+  "id": "/",
   "name": "Card Scanner",
   "short_name": "Card Scanner",
-  "start_url": "/card-scanner/",
-  "scope": "/card-scanner/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#14171b",
   "theme_color": "#14171b",
