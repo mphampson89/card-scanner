@@ -4,6 +4,9 @@ import { api, setPin } from '../lib/api.js'
 export default function PinGate({ onUnlock }) {
   const [value, setValue] = useState('')
   const [error, setError] = useState('')
+  // TODO (next session): phones show a numeric keypad with no Enter key, so the PIN
+  // can't be submitted from the keyboard there. Auto-submit once 6 digits are entered
+  // (e.g. an effect: when value.length === 6 -> submit()). Desktop already submits on Enter.
   async function submit(e) {
     e.preventDefault()
     setError('')
