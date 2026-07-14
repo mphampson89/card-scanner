@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { api } from '../lib/api.js'
 import { CAMEL_KEYS, emptyContact } from '../../shared/fields.js'
+import { contactsToVCardFile, vcardFilename } from '../../shared/vcard.js'
+import { downloadVcf } from '../lib/camera.js'
 
 const LABELS = {
   firstName: 'First name', lastName: 'Last name', title: 'Title', company: 'Company',
@@ -59,6 +61,14 @@ export default function Review() {
 
   async function save() {
     setSaving(true)
+    // Hand the just-scanned cards to the phone's Contacts import as one bundled .vcf.
+    // Fire this inside the Save tap's user gesture (before the network writes) so the
+    // browser treats it as user-initiated and doesn't block the download.
+    const kept = cards.filter((c) => c.action !== 'skip').map((c) => c.fields)
+    if (kept.length) {
+      const filename = kept.length === 1 ? vcardFilename(kept[0]) : 'scanned-contacts.vcf'
+      downloadVcf(filename, contactsToVCardFile(kept))
+    }
     const toCreate = cards.filter((c) => c.action === 'save').map((c) => c.fields)
     const toUpdate = cards.filter((c) => c.action === 'update' && c.dupe)
     if (toCreate.length) await api.createContacts(toCreate)
@@ -85,6 +95,7 @@ export default function Review() {
   )
 
   const single = cards.length === 1
+  const keepCount = cards.filter((c) => c.action !== 'skip').length
   return (
     <div style={{ padding: '28px 18px 0' }}>
       <h1 style={{ fontSize: 28, fontWeight: 600 }}>{single ? 'Review details' : `Review ${cards.length} cards`}</h1>
@@ -125,7 +136,7 @@ export default function Review() {
         </div>
       ))}
       <button className="btn-primary" style={{ margin: '16px 0 24px' }} disabled={saving} onClick={save}>
-        {saving ? 'Saving…' : `Save ${cards.filter((c) => c.action !== 'skip').length} ${single ? 'contact' : 'contacts'}`}
+        {saving ? 'Saving…' : keepCount ? `Save ${keepCount} & add to phone` : 'Save'}
       </button>
     </div>
   )
