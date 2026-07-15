@@ -1,4 +1,4 @@
-const CACHE = 'card-scanner-v1'
+const CACHE = 'card-scanner-v2'
 self.addEventListener('install', (e) => { self.skipWaiting() })
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys().then((keys) => Promise.all(
