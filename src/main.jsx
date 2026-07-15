@@ -1,17 +1,22 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
+import { BrowserRouter, MemoryRouter } from 'react-router-dom'
 import App from './App.jsx'
 import './theme.css'
 import { applyTheme } from './lib/theme.js'
 
 applyTheme()
 
+const framed = window.parent !== window
+const Router = framed ? MemoryRouter : BrowserRouter
+// Shell embeds Scanner at /scan; MemoryRouter needs it as the initial entry.
+const routerProps = framed ? { initialEntries: ['/scan'] } : {}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <Router {...routerProps}>
       <App />
-    </BrowserRouter>
+    </Router>
   </React.StrictMode>,
 )
 
