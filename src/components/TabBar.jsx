@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom'
+import { PICK_EVENT } from '../screens/Capture.jsx'
 
 const TABS = [
   { to: '/', label: 'Cards' },
@@ -20,7 +21,12 @@ export default function TabBar() {
         const active = pathname === t.to
         if (t.primary) {
           return (
-            <button key={t.to} onClick={() => nav(t.to)} aria-label="Scan a card"
+            <button key={t.to} aria-label="Scan a card"
+              onClick={() => {
+                // Already on the scan screen: open the file picker instead of a no-op navigation.
+                if (pathname === t.to) window.dispatchEvent(new Event(PICK_EVENT))
+                else nav(t.to)
+              }}
               className="btn-primary"
               style={{ width: 56, height: 56, borderRadius: 20, padding: 0,
                 fontSize: 26, fontWeight: 400, lineHeight: 1, boxShadow: 'var(--shadow-pop)' }}>+</button>

@@ -1,13 +1,23 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { resizeImage } from '../lib/camera.js'
 import Segmented from '../components/Segmented.jsx'
+
+export const PICK_EVENT = 'card-scanner:pick'
 
 export default function Capture() {
   const nav = useNavigate()
   const [batch, setBatch] = useState(false)
   const [shots, setShots] = useState([])
   const [adding, setAdding] = useState(false)
+  const uploadRef = useRef(null)
+
+  // The tab bar's + button fires this when the user is already on the scan screen.
+  useEffect(() => {
+    const open = () => { if (!adding) uploadRef.current?.click() }
+    window.addEventListener(PICK_EVENT, open)
+    return () => window.removeEventListener(PICK_EVENT, open)
+  }, [adding])
 
   async function onFiles(e) {
     const files = Array.from(e.target.files || [])
@@ -48,15 +58,24 @@ export default function Capture() {
         <span aria-hidden style={{ fontSize: 30, color: 'var(--accent)' }}>⌗</span>
         {batch
           ? 'Snap cards one after another, or upload a whole stack of photos at once.'
-          : 'Align the card in good light and take a clear photo.'}
+          : 'Take a clear photo in good light, or upload a card image someone sent you.'}
       </div>
 
       {!batch && (
-        <label className="btn-primary" style={{ display: 'block', textAlign: 'center', marginTop: 18 }}>
-          Take or upload card photo
-          <input type="file" accept="image/*" capture="environment" onChange={onFiles}
-            style={{ display: 'none' }} />
-        </label>
+        <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+          <label className="btn-primary" aria-disabled={adding}
+            style={{ flex: 1, textAlign: 'center', opacity: adding ? 0.55 : 1 }}>
+            {adding ? 'Adding…' : 'Take a photo'}
+            <input type="file" accept="image/*" capture="environment" onChange={onFiles}
+              disabled={adding} style={{ display: 'none' }} />
+          </label>
+          <label className="btn-ghost" aria-disabled={adding}
+            style={{ flex: 1, textAlign: 'center', opacity: adding ? 0.55 : 1 }}>
+            Upload from files
+            <input ref={uploadRef} type="file" accept="image/*" onChange={onFiles}
+              disabled={adding} style={{ display: 'none' }} />
+          </label>
+        </div>
       )}
 
       {batch && (
@@ -70,7 +89,7 @@ export default function Capture() {
           <label className="btn-ghost" aria-disabled={adding}
             style={{ flex: 1, textAlign: 'center', opacity: adding ? 0.55 : 1 }}>
             Upload photos
-            <input type="file" accept="image/*" multiple onChange={onFiles}
+            <input ref={uploadRef} type="file" accept="image/*" multiple onChange={onFiles}
               disabled={adding} style={{ display: 'none' }} />
           </label>
         </div>
