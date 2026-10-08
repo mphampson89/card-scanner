@@ -2,7 +2,7 @@ import { checkPin, json, unauthorized } from './_db.js'
 import { coerceFields } from '../../shared/fields.js'
 import { computeConfidence } from '../../shared/confidence.js'
 
-const MODEL = 'claude-sonnet-4-6'
+const MODEL = 'claude-sonnet-5-5'
 
 const INSTRUCTION = "Extract the contact details from this business card. Return ONLY a valid JSON object with these exact keys: firstName, lastName, title, company, workPhone, mobilePhone, email, website, street, city, province, postalCode, country, notes. If a field is not present on the card, return an empty string for that key. Phone numbers should be in E.164 format where possible. Do not include any preamble, explanation, markdown, or code fences. Return the JSON object only."
 
@@ -30,7 +30,8 @@ export default async function handler(req) {
     },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 1000,
+      max_tokens: 1024,
+      output_config: { effort: 'low' },
       messages: [{ role: 'user', content: [
         { type: 'image', source: { type: 'base64', media_type: mediaType || 'image/jpeg', data: image } },
         { type: 'text', text: INSTRUCTION },
@@ -39,6 +40,9 @@ export default async function handler(req) {
   })
   const data = await res.json()
   if (!res.ok) return json({ error: data?.error?.message || `API error ${res.status}` }, 502)
+
+  // Sonnet 5.5 can decline with HTTP 200 + stop_reason "refusal" (empty/partial content).
+  if (data.stop_reason === 'refusal') return json({ error: 'Could not parse card', raw: '' }, 422)
 
   const block = (data.content || []).find((b) => b.type === 'text')
   if (!block) return json({ error: 'No text block in response' }, 502)
