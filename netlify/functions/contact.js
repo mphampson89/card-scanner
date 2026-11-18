@@ -1,21 +1,32 @@
-import { sql, checkPin, json, unauthorized } from './_db.js'
+import { sql, checkPin, json, unauthorized, ensureSchema, cleanCardImage } from './_db.js'
 import { rowToContact, contactToRow } from '../../shared/fields.js'
 
 export default async function handler(req) {
   if (!checkPin(req)) return unauthorized()
+  await ensureSchema()
   const id = new URL(req.url).pathname.split('/').pop()
 
+  if (req.method === 'GET') {
+    const [row] = await sql`SELECT * FROM contacts WHERE id=${id}`
+    if (!row) return json({ error: 'Not found' }, 404)
+    return json({ ...rowToContact(row), cardImage: row.card_image || '' })
+  }
+
   if (req.method === 'PATCH') {
-    const r = contactToRow(await req.json())
+    const body = await req.json()
+    const r = contactToRow(body)
+    // Only replace the stored card photo when a valid new one is sent.
+    const img = cleanCardImage(body.cardImage)
     const [row] = await sql`
       UPDATE contacts SET
         first_name=${r.first_name}, last_name=${r.last_name}, title=${r.title}, company=${r.company},
         work_phone=${r.work_phone}, mobile_phone=${r.mobile_phone}, email=${r.email}, website=${r.website},
         street=${r.street}, city=${r.city}, province=${r.province}, postal_code=${r.postal_code},
-        country=${r.country}, notes=${r.notes}, updated_at=now()
+        country=${r.country}, notes=${r.notes},
+        card_image=COALESCE(${img}, card_image), updated_at=now()
       WHERE id=${id} RETURNING *`
     if (!row) return json({ error: 'Not found' }, 404)
-    return json(rowToContact(row))
+    return json({ ...rowToContact(row), cardImage: row.card_image || '' })
   }
 
   if (req.method === 'DELETE') {

@@ -13,7 +13,8 @@ vi.mock('../lib/api.js', () => ({
   },
 }))
 
-vi.mock('../lib/camera.js', () => ({ downloadVcf: vi.fn(), cropToBox: vi.fn(async () => 'data:image/jpeg;base64,crop') }))
+vi.mock('../lib/camera.js', () => ({ downloadVcf: vi.fn(), cropToBox: vi.fn(async () => 'data:image/jpeg;base64,crop'),
+  cardImageFor: vi.fn(async () => 'data:image/jpeg;base64,small') }))
 
 function renderWithShots(shots) {
   return render(
@@ -31,6 +32,7 @@ beforeEach(() => {
   api.matchDuplicates.mockResolvedValue([{ match: null }])
   api.createContacts.mockResolvedValue([{ id: '1' }])
   downloadVcf.mockClear()
+  api.createContacts.mockClear()
 })
 
 describe('Review', () => {
@@ -43,7 +45,7 @@ describe('Review', () => {
     renderWithShots([{ b64: 'x', type: 'image/jpeg' }])
     await screen.findByDisplayValue('Maya')
     fireEvent.click(screen.getByRole('button', { name: /save/i }))
-    expect(api.createContacts).toHaveBeenCalled()
+    await vi.waitFor(() => expect(api.createContacts).toHaveBeenCalled())
   })
   it('bundles the scanned cards into one .vcf for the phone on save', async () => {
     api.extract
@@ -95,5 +97,13 @@ describe('Review', () => {
     fireEvent.click(screen.getByRole('button', { name: /view card 1 photo/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Show whole photo' }))
     expect(screen.getByAltText('Card 1 photo, full size').getAttribute('src')).toBe('data:image/jpeg;base64,x')
+  })
+
+  it('saves a small card photo with the contact', async () => {
+    renderWithShots([{ b64: 'x', type: 'image/jpeg', dataUrl: 'data:image/jpeg;base64,x' }])
+    await screen.findByDisplayValue('Maya')
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+    await vi.waitFor(() => expect(api.createContacts).toHaveBeenCalled())
+    expect(api.createContacts.mock.lastCall[0][0].cardImage).toBe('data:image/jpeg;base64,small')
   })
 })

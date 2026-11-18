@@ -5,6 +5,7 @@ import { CAMEL_KEYS } from '../../shared/fields.js'
 import { contactToVCard, vcardFilename } from '../../shared/vcard.js'
 import { downloadVcf } from '../lib/camera.js'
 import Avatar from '../components/Avatar.jsx'
+import PhotoViewer from '../components/PhotoViewer.jsx'
 
 const LABELS = { workPhone: 'Work', mobilePhone: 'Mobile', email: 'Email', website: 'Website' }
 
@@ -14,21 +15,33 @@ export default function Contact() {
   const [c, setC] = useState(null)
   const [editing, setEditing] = useState(false)
   const [confirmDel, setConfirmDel] = useState(false)
+  const [viewing, setViewing] = useState(false)
 
   useEffect(() => {
-    api.listContacts().then((rows) => setC(rows.find((x) => x.id === id) || null))
+    api.getContact(id).then(setC).catch(() => setC(null))
   }, [id])
 
   if (!c) return <p style={{ padding: 48, textAlign: 'center', color: 'var(--text-2)' }}>Loading…</p>
 
-  async function saveEdit() { await api.updateContact(id, c); setEditing(false) }
+  async function saveEdit() {
+    const { cardImage, ...fields } = c // the stored photo is unchanged by edits; don't resend it
+    await api.updateContact(id, fields); setEditing(false)
+  }
   async function remove() { await api.deleteContact(id); nav('/') }
 
   return (
     <div style={{ padding: '24px 18px 0' }}>
+      {viewing && <PhotoViewer src={c.cardImage} alt="Business card, full size" onClose={() => setViewing(false)} />}
       <button onClick={() => nav('/')} style={{ background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 14 }}>‹ Cards</button>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 8 }}>
-        <Avatar contact={c} size={72} />
+        {c.cardImage ? (
+          <button onClick={() => setViewing(true)} aria-label="View card photo full screen"
+            style={{ padding: 0, border: 0, background: 'none', cursor: 'zoom-in' }}>
+            <img src={c.cardImage} alt="Business card"
+              style={{ height: 96, maxWidth: 220, objectFit: 'cover', borderRadius: 12, display: 'block',
+                boxShadow: '0 2px 10px rgba(0,0,0,.18)' }} />
+          </button>
+        ) : <Avatar contact={c} size={72} />}
         <div style={{ fontSize: 22, fontWeight: 600, marginTop: 12 }}>{`${c.firstName} ${c.lastName}`.trim()}</div>
         <div style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 2 }}>{[c.title, c.company].filter(Boolean).join(' · ')}</div>
       </div>
