@@ -2,6 +2,8 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, MemoryRouter } from 'react-router-dom'
 import App from './App.jsx'
+import '@fontsource-variable/geist'
+import '@fontsource-variable/geist-mono'
 import './theme.css'
 import { applyTheme } from './lib/theme.js'
 
