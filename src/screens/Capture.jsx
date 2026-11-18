@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Camera, Images, X } from '@phosphor-icons/react'
 import { resizeImage, looksHeic } from '../lib/camera.js'
 import Segmented from '../components/Segmented.jsx'
 
 export const PICK_EVENT = 'card-scanner:pick'
-
 
 export function describeFailure(failed, total) {
   const names = failed.map((f) => f.name || 'photo').join(', ')
@@ -26,7 +26,7 @@ export default function Capture() {
   const [error, setError] = useState('')
   const uploadRef = useRef(null)
 
-  // The tab bar's + button fires this when the user is already on the scan screen.
+  // The tab bar's Scan button fires this when the user is already on the scan screen.
   useEffect(() => {
     const open = () => { if (!adding) uploadRef.current?.click() }
     window.addEventListener(PICK_EVENT, open)
@@ -61,95 +61,78 @@ export default function Capture() {
     setShots((s) => s.filter((_, i) => i !== idx))
   }
 
+  const prompt = adding
+    ? (converting ? 'Converting iPhone photo…' : 'Preparing photo…')
+    : batch && shots.length ? 'Take the next card' : 'Take a photo'
+
   return (
-    <div style={{ padding: '28px 18px 0' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ fontSize: 28, fontWeight: 600, margin: 0 }}>Scan a card</h1>
+    <div className="screen enter">
+      <header className="screen-head">
+        <h1 className="screen-title">Scan</h1>
         <Segmented ariaLabel="Capture mode" value={batch ? 'batch' : 'single'}
           onChange={(v) => setBatch(v === 'batch')}
           options={[{ value: 'single', label: 'Single' }, { value: 'batch', label: 'Batch' }]} />
-      </div>
+      </header>
 
-      <div style={{ marginTop: 22, borderRadius: 20, aspectRatio: '16/10',
-        border: '2px dashed color-mix(in srgb, var(--accent) 50%, var(--line))',
-        background: 'radial-gradient(120% 100% at 50% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%)',
-        display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', justifyContent: 'center',
-        color: 'var(--text-2)', fontSize: 13, textAlign: 'center', padding: 16 }}>
-        <span aria-hidden style={{ fontSize: 30, color: 'var(--accent)' }}>⌗</span>
-        {batch
-          ? 'Snap cards one after another, or upload a whole stack of photos at once.'
-          : 'Take a clear photo in good light, or upload a card image someone sent you.'}
-      </div>
+      <label className="finder" aria-disabled={adding}>
+        <span className="mark tl" aria-hidden /><span className="mark tr" aria-hidden />
+        <span className="mark bl" aria-hidden /><span className="mark br" aria-hidden />
+        <span className="finder-icon" aria-hidden><Camera size={26} weight="bold" /></span>
+        <span role={adding ? 'status' : undefined} style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{prompt}</span>
+        <span className="small">Lay the card flat in good light</span>
+        <input type="file" accept="image/*" capture="environment" onChange={onFiles} disabled={adding}
+          className="sr-only" aria-label={batch ? 'Take a card photo' : 'Take a photo of the card'} />
+      </label>
 
-      {adding && (
-        <p role="status" style={{ marginTop: 14, fontSize: 13, color: 'var(--text-2)', textAlign: 'center' }}>
-          {converting ? 'Converting iPhone photo…' : 'Preparing photo…'}
-        </p>
-      )}
+      {/* Never add capture= here: on Android it forces the camera and hides the file picker. */}
+      <label className="btn btn-ghost" aria-disabled={adding} style={{ marginTop: 12, cursor: 'pointer' }}>
+        <Images size={19} aria-hidden /> {batch ? 'Upload several photos' : 'Upload from files'}
+        <input ref={uploadRef} type="file" accept="image/*,.heic,.heif" multiple={batch} onChange={onFiles}
+          disabled={adding} className="sr-only" />
+      </label>
+
       {error && (
-        <div role="alert" style={{ marginTop: 14, padding: 12, borderRadius: 12, fontSize: 13,
-          color: 'var(--text)', background: 'color-mix(in srgb, var(--warn) 16%, transparent)',
-          display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+        <div role="alert" className="notice" style={{ marginTop: 12, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
           <span style={{ flex: 1 }}>{error}</span>
-          <button onClick={() => setError('')} aria-label="Dismiss"
-            style={{ background: 'none', border: 0, color: 'var(--text)', fontSize: 16, padding: 0 }}>×</button>
-        </div>
-      )}
-
-      {!batch && (
-        <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-          <label className="btn-primary" aria-disabled={adding}
-            style={{ flex: 1, textAlign: 'center', opacity: adding ? 0.55 : 1 }}>
-            {adding ? 'Adding…' : 'Take a photo'}
-            <input type="file" accept="image/*" capture="environment" onChange={onFiles}
-              disabled={adding} style={{ display: 'none' }} />
-          </label>
-          <label className="btn-ghost" aria-disabled={adding}
-            style={{ flex: 1, textAlign: 'center', opacity: adding ? 0.55 : 1 }}>
-            Upload from files
-            <input ref={uploadRef} type="file" accept="image/*,.heic,.heif" onChange={onFiles}
-              disabled={adding} style={{ display: 'none' }} />
-          </label>
+          <button type="button" onClick={() => setError('')} aria-label="Dismiss"
+            style={{ background: 'none', border: 0, padding: 2, display: 'flex' }}>
+            <X size={16} aria-hidden />
+          </button>
         </div>
       )}
 
       {batch && (
-        <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-          <label className="btn-primary" aria-disabled={adding}
-            style={{ flex: 1, textAlign: 'center', opacity: adding ? 0.55 : 1 }}>
-            {adding ? 'Adding…' : 'Take a card'}
-            <input type="file" accept="image/*" capture="environment" onChange={onFiles}
-              disabled={adding} style={{ display: 'none' }} />
-          </label>
-          <label className="btn-ghost" aria-disabled={adding}
-            style={{ flex: 1, textAlign: 'center', opacity: adding ? 0.55 : 1 }}>
-            Upload photos
-            <input ref={uploadRef} type="file" accept="image/*,.heic,.heif" multiple onChange={onFiles}
-              disabled={adding} style={{ display: 'none' }} />
-          </label>
-        </div>
-      )}
-
-      {batch && shots.length > 0 && (
-        <>
-          <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
-            {shots.map((s, i) => (
-              <div key={i} style={{ position: 'relative' }}>
-                <img src={s.dataUrl} alt={`Card ${i + 1}`}
-                  style={{ width: 64, height: 44, objectFit: 'cover', borderRadius: 8, display: 'block' }} />
-                <button onClick={() => removeShot(i)} aria-label={`Remove card ${i + 1}`}
-                  style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: 999,
-                    background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--text)',
-                    fontSize: 13, lineHeight: 1, padding: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+        <section style={{ marginTop: 26 }} aria-label="Cards to review">
+          {shots.length === 0 ? (
+            <p className="small muted">Snap cards one after another, or upload a stack of photos. They wait here until you review them together.</p>
+          ) : (
+            <>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
+                <h2 style={{ fontSize: 16, fontWeight: 600 }}>Ready to read</h2>
+                <span className="num small muted">{shots.length}</span>
               </div>
-            ))}
-          </div>
-          <button className="btn-primary" style={{ marginTop: 16 }} disabled={adding}
-            onClick={() => nav('/review', { state: { shots } })}>
-            Review {shots.length} {shots.length === 1 ? 'card' : 'cards'}
-          </button>
-        </>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                {shots.map((s, i) => (
+                  <div key={i} style={{ position: 'relative' }}>
+                    <img src={s.dataUrl} alt={`Card ${i + 1}`}
+                      style={{ width: '100%', aspectRatio: 1.75, objectFit: 'cover', borderRadius: 'var(--r-chip)',
+                        display: 'block', border: '1px solid var(--line)', boxShadow: 'var(--shadow-sm)' }} />
+                    <button type="button" onClick={() => removeShot(i)} aria-label={`Remove card ${i + 1}`}
+                      style={{ position: 'absolute', top: -8, right: -8, width: 28, height: 28, borderRadius: 999,
+                        background: 'var(--text)', color: 'var(--bg)', border: '2px solid var(--bg)', padding: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <X size={13} weight="bold" aria-hidden />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button type="button" className="btn btn-primary" style={{ marginTop: 20 }} disabled={adding}
+                onClick={() => nav('/review', { state: { shots } })}>
+                Review {shots.length} {shots.length === 1 ? 'card' : 'cards'}
+              </button>
+            </>
+          )}
+        </section>
       )}
     </div>
   )

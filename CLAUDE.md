@@ -41,6 +41,11 @@ Card scanner PWA. Snap or upload a business card photo, extract a contact, dedup
 - 2026-11-18: Duplicate check moved from /api/contacts/match to /api/match (it shared a pattern
   with /api/contacts/:id). Review now shows an alert if the duplicate check fails. Full-size photo
   viewer is pushed into history (useHistoryOverlay) so phone Back closes it.
+- 2026-11-18: "Cardstock" redesign. Cool grey + ink with one cobalt accent (tokens in src/theme.css,
+  light default with data-theme="dark"; Settings has Auto/Light/Dark). Geist + Geist Mono self-hosted via
+  @fontsource-variable (no Google Fonts). Icons: @phosphor-icons/react. Shared labelled edit form in
+  src/components/FieldForm.jsx (labels/groups in shared/fields.js). Screenshots in docs/design/2026-11-18-fresh-look.
+  Fixed: PhotoViewer close button also fired the backdrop close, so Back ran twice and left Review.
 
 ## Active Worktrees (if applicable)
 None.

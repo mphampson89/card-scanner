@@ -1,17 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { CheckCircle, Warning, ArrowsOut } from '@phosphor-icons/react'
 import { api } from '../lib/api.js'
 import { CAMEL_KEYS, emptyContact } from '../../shared/fields.js'
 import { contactsToVCardFile, vcardFilename } from '../../shared/vcard.js'
 import { downloadVcf, cropToBox, cardImageFor } from '../lib/camera.js'
 import PhotoViewer, { useHistoryOverlay } from '../components/PhotoViewer.jsx'
+import FieldForm from '../components/FieldForm.jsx'
+import Segmented from '../components/Segmented.jsx'
 
-const LABELS = {
-  firstName: 'First name', lastName: 'Last name', title: 'Title', company: 'Company',
-  workPhone: 'Work phone', mobilePhone: 'Mobile phone', email: 'Email', website: 'Website',
-  street: 'Street', city: 'City', province: 'Province', postalCode: 'Postal code',
-  country: 'Country', notes: 'Notes',
-}
+const SHORT_KEYS = ['firstName', 'lastName', 'title', 'company', 'workPhone', 'mobilePhone', 'email']
 
 async function mapLimit(items, limit, fn) {
   const out = new Array(items.length)
@@ -65,7 +63,7 @@ export default function Review() {
     if (shots.length === 0) { nav('/'); return }
     mapLimit(shots, 3, (shot) => api.extract(shot.b64, shot.type)).then(async (results) => {
       const initial = results.map((r) => ({
-        fields: r.error ? emptyContact() : r.fields,
+        fields: r.error ? emptyContact() : { ...emptyContact(), ...r.fields },
         confidence: r.error ? 'check' : r.confidence,
         cardBox: r.error ? null : r.cardBox || null,
         error: r.error || null,
@@ -91,7 +89,7 @@ export default function Review() {
     try {
       const r = await api.extract(shots[idx].b64, shots[idx].type)
       setCards((cs) => cs.map((c, i) => i === idx
-        ? { ...c, fields: r.fields, confidence: r.confidence, cardBox: r.cardBox || null, error: null } : c))
+        ? { ...c, fields: { ...emptyContact(), ...r.fields }, confidence: r.confidence, cardBox: r.cardBox || null, error: null } : c))
     } catch (e) {
       setCards((cs) => cs.map((c, i) => i === idx ? { ...c, error: e.message } : c))
     }
@@ -126,111 +124,139 @@ export default function Review() {
       if (toCreate.length) await api.createContacts(toCreate)
       for (const c of toUpdate) await api.updateContact(c.dupe.id, withImage(c))
     } catch (e) {
-      setSaveError(`Could not save to your contact list: ${e.message}. The .vcf file was still downloaded.`)
+      setSaveError(`Could not save to your contact list: ${friendlyError(e.message)} The contacts file was still downloaded, and your edits are still here.`)
       setSaving(false)
       return
     }
     nav('/')
   }
 
+  const plural = shots.length > 1
   if (loading) return (
-    <div style={{ padding: '28px 18px 0' }} aria-busy="true" aria-label={`Reading ${shots.length > 1 ? 'cards' : 'card'}`}>
-      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 4 }}>Reading {shots.length > 1 ? 'cards' : 'card'}…</h1>
-      <p style={{ color: 'var(--text-2)', fontSize: 13, margin: '0 0 20px' }}>Pulling names, numbers and emails off the photo.</p>
-      {Array.from({ length: shots.length }).map((_, i) => (
-        <div key={i} style={{ marginBottom: 18 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-            <div className="skel" style={{ width: 40, height: 40, borderRadius: 13 }} />
-            <div className="skel" style={{ width: '52%', height: 15 }} />
+    <div className="screen enter" aria-busy="true" aria-label={`Reading ${plural ? 'cards' : 'card'}`}>
+      <header className="screen-head" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+        <h1 className="screen-title">Reading {plural ? `${shots.length} cards` : 'card'}…</h1>
+        <p className="small muted">Picking out names, numbers and emails.</p>
+      </header>
+      <div style={{ display: 'grid', gridTemplateColumns: plural ? '1fr 1fr' : '1fr', gap: 14 }}>
+        {shots.map((s, i) => (
+          <div key={i} className="reading">
+            {s.dataUrl && <img src={s.dataUrl} alt={`Card ${i + 1} being read`} />}
           </div>
-          {[88, 70, 80].map((w, j) => (
-            <div key={j} className="skel" style={{ width: `${w}%`, height: 40, marginBottom: 10, borderRadius: 12 }} />
-          ))}
-        </div>
-      ))}
+        ))}
+      </div>
+      <div style={{ marginTop: 22 }}>
+        {[70, 88, 56].map((w, j) => (
+          <div key={j} style={{ marginBottom: 16 }}>
+            <div className="skel" style={{ width: 80, height: 10, marginBottom: 8 }} />
+            <div className="skel" style={{ width: `${w}%`, height: 46, borderRadius: 'var(--r-ctl)' }} />
+          </div>
+        ))}
+      </div>
     </div>
   )
 
   const single = cards.length === 1
   const keepCount = cards.filter((c) => c.action !== 'skip').length
   return (
-    <div style={{ padding: '28px 18px 0' }}>
-      <h1 style={{ fontSize: 28, fontWeight: 600 }}>{single ? 'Review details' : `Review ${cards.length} cards`}</h1>
-      {matchError && (
-        <div role="alert" style={{ background: 'color-mix(in srgb, var(--warn) 16%, transparent)',
-          borderRadius: 10, padding: 10, marginBottom: 10, fontSize: 12 }}>{matchError}</div>
-      )}
-      {cards.map((card, idx) => (
-        <div key={idx} style={{ borderTop: idx ? '1px solid var(--line)' : 'none', paddingTop: idx ? 16 : 8, marginTop: idx ? 16 : 8 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <strong style={{ fontSize: 15 }}>{`${card.fields.firstName} ${card.fields.lastName}`.trim() || 'Untitled card'}</strong>
-            <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 999,
-              color: card.confidence === 'high' ? 'var(--ok)' : 'var(--warn)',
-              background: `color-mix(in srgb, ${card.confidence === 'high' ? 'var(--ok)' : 'var(--warn)'} 15%, transparent)` }}>
-              {card.confidence === 'high' ? 'High confidence' : 'Please check'}
-            </span>
-          </div>
-          {shots[idx]?.dataUrl && (
-            <button onClick={() => { setWholePhoto(false); openViewer(idx) }} aria-label={`View card ${idx + 1} photo full screen`}
-              style={{ display: 'block', width: '100%', padding: 0, border: 0, background: 'var(--bg, transparent)',
-                marginBottom: 12, cursor: 'zoom-in',
-                ...(single ? { position: 'sticky', top: 0, zIndex: 2, paddingTop: 6, paddingBottom: 6 } : {}) }}>
-              <img src={photo(idx)} alt={`Card ${idx + 1} photo`}
-                style={{ width: '100%', maxHeight: single ? '26vh' : 160, objectFit: 'contain',
-                  borderRadius: 12, display: 'block', background: 'var(--surface)' }} />
-            </button>
-          )}
-          {card.error && (
-            <div role="alert" style={{ background: 'color-mix(in srgb, var(--warn) 16%, transparent)',
-              borderRadius: 10, padding: 10, marginBottom: 10, fontSize: 12 }}>
-              Could not read this card: {friendlyError(card.error)}
-              <button onClick={() => retry(idx)} disabled={retrying === idx}
-                style={{ display: 'block', marginTop: 8, padding: '6px 12px', borderRadius: 8, fontSize: 12,
-                  border: '1px solid var(--line)', background: 'transparent', color: 'var(--text)' }}>
-                {retrying === idx ? 'Trying again…' : 'Try again'}
-              </button>
-              <div style={{ marginTop: 6, color: 'var(--text-2)' }}>Or type the details in below.</div>
-            </div>
-          )}
-          {card.dupe && (
-            <div style={{ background: 'color-mix(in srgb, var(--warn) 14%, transparent)',
-              borderRadius: 10, padding: 10, marginBottom: 10, fontSize: 12 }}>
-              Possible duplicate (matched on {card.dupe.matchedOn}).
-              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                {['skip', 'save', 'update'].map((a) => (
-                  <button key={a} onClick={() => setAction(idx, a)}
-                    style={{ flex: 1, padding: '6px 4px', borderRadius: 8, fontSize: 12,
-                      border: '1px solid var(--line)',
-                      background: card.action === a ? 'var(--accent)' : 'transparent',
-                      color: card.action === a ? 'var(--accent-ink)' : 'var(--text)' }}>
-                    {a === 'skip' ? 'Skip' : a === 'save' ? 'Save new' : 'Update'}
+    <div className="screen enter">
+      <header className="screen-head">
+        <h1 className="screen-title">{single ? 'Check the details' : `Check ${cards.length} cards`}</h1>
+      </header>
+
+      {matchError && <p role="alert" className="notice" style={{ marginBottom: 16 }}>{matchError}</p>}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        {cards.map((card, idx) => {
+          const name = `${card.fields.firstName} ${card.fields.lastName}`.trim() || card.fields.company || 'No name found'
+          const high = card.confidence === 'high'
+          return (
+            <section key={idx} className="panel" style={{ padding: 16 }} aria-label={name}>
+              {shots[idx]?.dataUrl && (
+                // In single mode the photo stays pinned while you type, so you can compare.
+                <div style={single ? { position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)',
+                  margin: '-16px -16px 14px', padding: '16px 16px 10px', borderRadius: 'var(--r-panel) var(--r-panel) 0 0' }
+                  : { marginBottom: 14 }}>
+                  <button type="button" onClick={() => { setWholePhoto(false); openViewer(idx) }}
+                    aria-label={`View card ${idx + 1} photo full screen`}
+                    style={{ display: 'block', width: '100%', padding: 0, border: 0, background: 'var(--surface-2)',
+                      borderRadius: 'var(--r-ctl)', overflow: 'hidden', cursor: 'zoom-in', position: 'relative' }}>
+                    <img src={photo(idx)} alt={`Card ${idx + 1} photo`}
+                      style={{ width: '100%', aspectRatio: 1.75, maxHeight: single ? '26vh' : 180, objectFit: 'contain', display: 'block' }} />
+                    <span aria-hidden style={{ position: 'absolute', right: 8, bottom: 8, width: 30, height: 30, borderRadius: 999,
+                      background: 'color-mix(in srgb, var(--text) 70%, transparent)', color: 'var(--bg)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <ArrowsOut size={15} weight="bold" />
+                    </span>
                   </button>
-                ))}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 16,
+                opacity: card.action === 'skip' ? 0.55 : 1, transition: 'opacity .2s ease' }}>
+                <h2 className="ellipsis" style={{ fontSize: 17, fontWeight: 600, minWidth: 0 }}>{name}</h2>
+                <span className={`badge ${high ? 'badge-ok' : 'badge-warn'}`}>
+                  {high ? <CheckCircle size={14} weight="fill" aria-hidden /> : <Warning size={14} weight="fill" aria-hidden />}
+                  {high ? 'Read clearly' : 'Double-check'}
+                </span>
               </div>
-            </div>
-          )}
-          {(single ? CAMEL_KEYS : ['firstName', 'lastName', 'company', 'email', 'workPhone']).map((key) => (
-            <div key={key} style={{ marginBottom: 10 }}>
-              <label style={{ fontSize: 11, color: 'var(--text-2)' }}>{LABELS[key]}</label>
-              <input className="input" value={card.fields[key]}
-                onChange={(e) => update(idx, key, e.target.value)} />
-            </div>
-          ))}
-        </div>
-      ))}
+
+              {card.error && (
+                <div role="alert" className="notice" style={{ marginBottom: 16 }}>
+                  <p>{`Could not read this card: ${friendlyError(card.error)}`}</p>
+                  <p className="small muted" style={{ margin: '4px 0 10px' }}>Try again, or type the details in below.</p>
+                  <button type="button" className="btn btn-ghost btn-sm" style={{ width: 'auto' }}
+                    onClick={() => retry(idx)} disabled={retrying === idx}>
+                    {retrying === idx ? 'Trying again…' : 'Try again'}
+                  </button>
+                </div>
+              )}
+
+              {card.dupe && (
+                <div className="notice" style={{ marginBottom: 16 }}>
+                  <p style={{ marginBottom: 10 }}>
+                    <strong>Already in your cards?</strong> {card.dupe.matchedOn === 'email' ? 'Same email' : 'Same name and company'} as someone you saved.
+                  </p>
+                  <Segmented ariaLabel={`What to do with ${name}`} value={card.action} onChange={(a) => setAction(idx, a)}
+                    options={[{ value: 'skip', label: 'Skip' }, { value: 'update', label: 'Update' }, { value: 'save', label: 'Keep both' }]} />
+                </div>
+              )}
+
+              {card.action !== 'skip' && (single ? (
+                <FieldForm idPrefix={`c${idx}`} values={card.fields} onChange={(k, v) => update(idx, k, v)} />
+              ) : (
+                <>
+                  <FieldForm idPrefix={`c${idx}`} values={card.fields} onChange={(k, v) => update(idx, k, v)} keys={SHORT_KEYS} />
+                  <details style={{ marginTop: 16 }}>
+                    <summary className="small" style={{ color: 'var(--accent)', fontWeight: 600, padding: '6px 0' }}>
+                      Address, website and notes
+                    </summary>
+                    <div style={{ marginTop: 12 }}>
+                      <FieldForm idPrefix={`c${idx}m`} values={card.fields} onChange={(k, v) => update(idx, k, v)}
+                        keys={CAMEL_KEYS.filter((k) => !SHORT_KEYS.includes(k))} />
+                    </div>
+                  </details>
+                </>
+              ))}
+            </section>
+          )
+        })}
+      </div>
+
       {viewing !== null && (
         <PhotoViewer src={wholePhoto ? shots[viewing].dataUrl : photo(viewing)}
           alt={`Card ${viewing + 1} photo, full size`} onClose={closeViewer}
           toggle={crops[viewing] ? { label: wholePhoto ? 'Show card only' : 'Show whole photo',
             onClick: () => setWholePhoto((w) => !w) } : null} />
       )}
-      {saveError && (
-        <div role="alert" style={{ marginTop: 16, padding: 10, borderRadius: 10, fontSize: 12,
-          background: 'color-mix(in srgb, var(--warn) 16%, transparent)' }}>{saveError}</div>
-      )}
-      <button className="btn-primary" style={{ margin: '16px 0 24px' }} disabled={saving} onClick={save}>
-        {saving ? 'Saving…' : keepCount ? `Save ${keepCount} & add to phone` : 'Save'}
-      </button>
+
+      <div style={{ position: 'sticky', bottom: 'calc(80px + env(safe-area-inset-bottom))', zIndex: 3, marginTop: 20, paddingTop: 12,
+        background: 'linear-gradient(to bottom, transparent, var(--bg) 30%)' }}>
+        {saveError && <p role="alert" className="error-text" style={{ marginBottom: 10 }}>{saveError}</p>}
+        <button type="button" className="btn btn-primary" disabled={saving} onClick={save}>
+          {saving ? 'Saving…' : keepCount ? `Save ${keepCount} and add to phone` : 'Done'}
+        </button>
+      </div>
     </div>
   )
 }

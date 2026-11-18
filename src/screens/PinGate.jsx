@@ -1,31 +1,42 @@
 import { useState } from 'react'
+import { IdentificationCard } from '@phosphor-icons/react'
 import { api, setPin } from '../lib/api.js'
 
 export default function PinGate({ onUnlock }) {
   const [value, setValue] = useState('')
   const [error, setError] = useState('')
+  const [checking, setChecking] = useState(false)
   async function submit(e) {
     e.preventDefault()
+    if (!value) return
     setError('')
-    const ok = await api.verifyPin(value)
-    if (ok) { setPin(value); onUnlock() } else setError('Wrong PIN')
+    setChecking(true)
+    const ok = await api.verifyPin(value).catch(() => null)
+    setChecking(false)
+    if (ok) { setPin(value); onUnlock() }
+    else setError(ok === null ? 'Couldn’t reach the server. Check your connection.' : 'That PIN didn’t work. Try again.')
   }
   return (
-    <form onSubmit={submit} style={{ padding: '22dvh 24px 0', display: 'flex',
-      flexDirection: 'column', gap: 14, alignItems: 'center' }}>
-      <div aria-hidden style={{ width: 64, height: 44, borderRadius: 12, marginBottom: 6,
-        background: 'var(--accent)', color: 'var(--accent-ink)', boxShadow: 'var(--shadow-pop)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700,
-        transform: 'rotate(-4deg)' }}>⌗</div>
-      <h1 style={{ fontSize: 28, fontWeight: 600, margin: 0 }}>Card Scanner</h1>
-      <p style={{ color: 'var(--text-2)', fontSize: 13, margin: '0 0 8px', textAlign: 'center' }}>
-        Enter your PIN to unlock your contacts.
-      </p>
-      <input className="input num" type="password" inputMode="numeric" value={value}
-        onChange={(e) => setValue(e.target.value)} placeholder="• • • •" autoFocus
-        style={{ maxWidth: 240, textAlign: 'center', letterSpacing: '0.3em', fontSize: 18 }} />
-      {error && <p role="alert" style={{ color: 'var(--warn)', fontSize: 13, margin: 0 }}>{error}</p>}
-      <button className="btn-primary" style={{ maxWidth: 240 }}>Unlock</button>
+    <form onSubmit={submit} className="enter" style={{ padding: '18dvh 28px 0', display: 'flex',
+      flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+      <div aria-hidden style={{ width: 72, height: 46, borderRadius: 'var(--r-chip)', marginBottom: 22,
+        background: 'var(--accent)', color: 'var(--accent-ink)', boxShadow: 'var(--shadow-md)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'rotate(-5deg)' }}>
+        <IdentificationCard size={28} weight="bold" />
+      </div>
+      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 6 }}>Card Scanner</h1>
+      <p className="muted" style={{ marginBottom: 26 }}>Enter your PIN to open your cards.</p>
+      <div className="field" style={{ width: '100%', maxWidth: 260, textAlign: 'left' }}>
+        <label htmlFor="pin">PIN</label>
+        <input id="pin" className="input num" type="password" inputMode="numeric" autoComplete="current-password"
+          value={value} onChange={(e) => setValue(e.target.value)} autoFocus
+          aria-invalid={!!error} aria-describedby={error ? 'pin-error' : undefined}
+          style={{ textAlign: 'center', letterSpacing: '0.35em', fontSize: 20 }} />
+        {error && <p id="pin-error" role="alert" className="error-text">{error}</p>}
+      </div>
+      <button className="btn btn-primary" disabled={checking} style={{ maxWidth: 260, marginTop: 16 }}>
+        {checking ? 'Checking…' : 'Unlock'}
+      </button>
     </form>
   )
 }

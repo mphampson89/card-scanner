@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { getPin, setPin, api } from './lib/api.js'
 import { MY_APP_ID, pickTrustedParent, validateUnlock } from './lib/bridgeUnlock.js'
@@ -12,7 +12,7 @@ import TabBar from './components/TabBar.jsx'
 
 export default function App() {
   const framed = window.parent !== window
-  // Framed under Bridge: ignore the partitioned stored pin; the handshake authenticates (§6.3).
+  // Framed under Bridge: ignore the partitioned stored pin; the handshake authenticates (Â§6.3).
   const [unlocked, setUnlocked] = useState(framed ? false : !!getPin())
   const readySentRef = useRef(false)
 
@@ -51,7 +51,7 @@ export default function App() {
   if (!unlocked) return <PinGate onUnlock={() => setUnlocked(true)} />
   return (
     <>
-      <main style={{ paddingBottom: 88 }}>
+      <main style={{ paddingBottom: 'calc(84px + env(safe-area-inset-bottom))' }}>
         <Routes>
           <Route path="/" element={<Library />} />
           <Route path="/scan" element={<Capture />} />

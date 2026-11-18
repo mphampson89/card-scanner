@@ -4,6 +4,22 @@ export const CAMEL_KEYS = [
   'street', 'city', 'province', 'postalCode', 'country', 'notes',
 ]
 
+export const FIELD_LABELS = {
+  firstName: 'First name', lastName: 'Last name', title: 'Title', company: 'Company',
+  workPhone: 'Work phone', mobilePhone: 'Mobile phone', email: 'Email', website: 'Website',
+  street: 'Street', city: 'City', province: 'Province', postalCode: 'Postal code',
+  country: 'Country', notes: 'Notes',
+}
+
+// How the edit forms group the fields. 'wide' fields take the full row.
+export const FIELD_GROUPS = [
+  { title: 'Person', keys: ['firstName', 'lastName', 'title', 'company'] },
+  { title: 'Phone and web', keys: ['workPhone', 'mobilePhone', 'email', 'website'] },
+  { title: 'Address', keys: ['street', 'city', 'province', 'postalCode', 'country'] },
+  { title: 'Notes', keys: ['notes'] },
+]
+export const WIDE_FIELDS = new Set(['title', 'company', 'email', 'website', 'street', 'notes'])
+
 const CAMEL_TO_SNAKE = {
   firstName: 'first_name', lastName: 'last_name', title: 'title', company: 'company',
   workPhone: 'work_phone', mobilePhone: 'mobile_phone', email: 'email', website: 'website',

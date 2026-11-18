@@ -3,3 +3,6 @@ generate-icons.js
 *.local.html
 node_modules/
 dist/
+
+# Local Netlify folder
+.netlify
