@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import Capture, { PICK_EVENT } from './Capture.jsx'
+import { resizeImage } from '../lib/camera.js'
 import TabBar from '../components/TabBar.jsx'
 
 vi.mock('../lib/camera.js', () => ({
@@ -72,5 +73,15 @@ describe('Capture', () => {
     const click = vi.spyOn(multi, 'click').mockImplementation(() => {})
     window.dispatchEvent(new Event(PICK_EVENT))
     expect(click).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows an error instead of doing nothing when a photo cannot be opened', async () => {
+    resizeImage.mockRejectedValueOnce(new Error('decode'))
+    const { container } = renderCapture()
+    const upload = Array.from(container.querySelectorAll('input[type=file]')).find((i) => !i.hasAttribute('capture'))
+    fireEvent.change(upload, { target: { files: [new File(['x'], 'IMG_1.HEIC', { type: 'image/heic' })] } })
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent(/Could not open IMG_1.HEIC/)
+    expect(alert).toHaveTextContent(/HEIC/)
   })
 })

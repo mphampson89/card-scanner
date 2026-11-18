@@ -5,11 +5,25 @@ import Segmented from '../components/Segmented.jsx'
 
 export const PICK_EVENT = 'card-scanner:pick'
 
+const isHeic = (f) => /\.(heic|heif)$/i.test(f.name || '') || /hei[cf]/i.test(f.type || '')
+
+export function describeFailure(failed, total) {
+  const names = failed.map((f) => f.name || 'photo').join(', ')
+  const lead = failed.length === total
+    ? `Could not open ${names}.`
+    : `Skipped ${failed.length} of ${total} photos: ${names}.`
+  if (failed.some(isHeic)) {
+    return `${lead} It is an iPhone HEIC photo, which this browser cannot read. Take a screenshot of it and upload the screenshot, or ask for a JPG.`
+  }
+  return `${lead} The file may not be a photo or may be damaged. Try a screenshot of it instead.`
+}
+
 export default function Capture() {
   const nav = useNavigate()
   const [batch, setBatch] = useState(false)
   const [shots, setShots] = useState([])
   const [adding, setAdding] = useState(false)
+  const [error, setError] = useState('')
   const uploadRef = useRef(null)
 
   // The tab bar's + button fires this when the user is already on the scan screen.
@@ -23,15 +37,20 @@ export default function Capture() {
     const files = Array.from(e.target.files || [])
     e.target.value = ''
     if (!files.length) return
+    setError('')
     setAdding(true)
     const resized = []
+    const failed = []
     for (const file of files) {
       try {
         const r = await resizeImage(file)
         resized.push({ b64: r.b64, type: r.type, dataUrl: r.dataUrl })
-      } catch { /* skip an image the browser can't decode */ }
+      } catch {
+        failed.push(file)
+      }
     }
     setAdding(false)
+    if (failed.length) setError(describeFailure(failed, files.length))
     if (!resized.length) return
     if (batch) setShots((s) => [...s, ...resized])
     else nav('/review', { state: { shots: resized } })
@@ -60,6 +79,21 @@ export default function Capture() {
           ? 'Snap cards one after another, or upload a whole stack of photos at once.'
           : 'Take a clear photo in good light, or upload a card image someone sent you.'}
       </div>
+
+      {adding && (
+        <p role="status" style={{ marginTop: 14, fontSize: 13, color: 'var(--text-2)', textAlign: 'center' }}>
+          Preparing photo…
+        </p>
+      )}
+      {error && (
+        <div role="alert" style={{ marginTop: 14, padding: 12, borderRadius: 12, fontSize: 13,
+          color: 'var(--text)', background: 'color-mix(in srgb, var(--warn) 16%, transparent)',
+          display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <span style={{ flex: 1 }}>{error}</span>
+          <button onClick={() => setError('')} aria-label="Dismiss"
+            style={{ background: 'none', border: 0, color: 'var(--text)', fontSize: 16, padding: 0 }}>×</button>
+        </div>
+      )}
 
       {!batch && (
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>

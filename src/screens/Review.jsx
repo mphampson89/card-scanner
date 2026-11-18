@@ -25,12 +25,21 @@ async function mapLimit(items, limit, fn) {
   return out
 }
 
+export function friendlyError(msg = '') {
+  if (msg === 'Unauthorized') return 'your PIN session expired. Reopen the app and enter your PIN.'
+  if (msg === 'Could not parse card') return 'the photo was unclear or did not look like a business card.'
+  if (/Failed to fetch|NetworkError|Load failed/i.test(msg)) return 'no connection. Check your signal and try again.'
+  return msg
+}
+
 export default function Review() {
   const nav = useNavigate()
   const shots = useLocation().state?.shots || []
   const [cards, setCards] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const [retrying, setRetrying] = useState(null)
   const started = useRef(false)
 
   useEffect(() => {
@@ -49,8 +58,24 @@ export default function Review() {
       setCards(initial.map((c, i) => ({ ...c, dupe: matches[i]?.match || null,
         action: matches[i]?.match ? 'skip' : 'save' })))
       setLoading(false)
+    }).catch((e) => {
+      setCards(shots.map(() => ({ fields: emptyContact(), confidence: 'check',
+        error: e.message || 'Something went wrong', dupe: null, action: 'save' })))
+      setLoading(false)
     })
   }, [])
+
+  async function retry(idx) {
+    setRetrying(idx)
+    try {
+      const r = await api.extract(shots[idx].b64, shots[idx].type)
+      setCards((cs) => cs.map((c, i) => i === idx
+        ? { ...c, fields: r.fields, confidence: r.confidence, error: null } : c))
+    } catch (e) {
+      setCards((cs) => cs.map((c, i) => i === idx ? { ...c, error: e.message } : c))
+    }
+    setRetrying(null)
+  }
 
   function update(idx, key, value) {
     setCards((cs) => cs.map((c, i) => i === idx ? { ...c, fields: { ...c.fields, [key]: value } } : c))
@@ -61,6 +86,7 @@ export default function Review() {
 
   async function save() {
     setSaving(true)
+    setSaveError('')
     // Hand the just-scanned cards to the phone's Contacts import as one bundled .vcf.
     // Fire this inside the Save tap's user gesture (before the network writes) so the
     // browser treats it as user-initiated and doesn't block the download.
@@ -71,8 +97,14 @@ export default function Review() {
     }
     const toCreate = cards.filter((c) => c.action === 'save').map((c) => c.fields)
     const toUpdate = cards.filter((c) => c.action === 'update' && c.dupe)
-    if (toCreate.length) await api.createContacts(toCreate)
-    for (const c of toUpdate) await api.updateContact(c.dupe.id, c.fields)
+    try {
+      if (toCreate.length) await api.createContacts(toCreate)
+      for (const c of toUpdate) await api.updateContact(c.dupe.id, c.fields)
+    } catch (e) {
+      setSaveError(`Could not save to your contact list: ${e.message}. The .vcf file was still downloaded.`)
+      setSaving(false)
+      return
+    }
     nav('/')
   }
 
@@ -109,6 +141,18 @@ export default function Review() {
               {card.confidence === 'high' ? 'High confidence' : 'Please check'}
             </span>
           </div>
+          {card.error && (
+            <div role="alert" style={{ background: 'color-mix(in srgb, var(--warn) 16%, transparent)',
+              borderRadius: 10, padding: 10, marginBottom: 10, fontSize: 12 }}>
+              Could not read this card: {friendlyError(card.error)}
+              <button onClick={() => retry(idx)} disabled={retrying === idx}
+                style={{ display: 'block', marginTop: 8, padding: '6px 12px', borderRadius: 8, fontSize: 12,
+                  border: '1px solid var(--line)', background: 'transparent', color: 'var(--text)' }}>
+                {retrying === idx ? 'Trying again…' : 'Try again'}
+              </button>
+              <div style={{ marginTop: 6, color: 'var(--text-2)' }}>Or type the details in below.</div>
+            </div>
+          )}
           {card.dupe && (
             <div style={{ background: 'color-mix(in srgb, var(--warn) 14%, transparent)',
               borderRadius: 10, padding: 10, marginBottom: 10, fontSize: 12 }}>
@@ -135,6 +179,10 @@ export default function Review() {
           ))}
         </div>
       ))}
+      {saveError && (
+        <div role="alert" style={{ marginTop: 16, padding: 10, borderRadius: 10, fontSize: 12,
+          background: 'color-mix(in srgb, var(--warn) 16%, transparent)' }}>{saveError}</div>
+      )}
       <button className="btn-primary" style={{ margin: '16px 0 24px' }} disabled={saving} onClick={save}>
         {saving ? 'Saving…' : keepCount ? `Save ${keepCount} & add to phone` : 'Save'}
       </button>
