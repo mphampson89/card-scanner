@@ -20,7 +20,8 @@ export const api = {
   extract: (image, mediaType) => call('/api/extract', { method: 'POST', body: JSON.stringify({ image, mediaType }) }),
   listContacts: (query = '') => call(`/api/contacts${query ? `?query=${encodeURIComponent(query)}` : ''}`),
   createContacts: (contactsOrOne) => call('/api/contacts', { method: 'POST', body: JSON.stringify(contactsOrOne) }),
+  getContact: (id) => call(`/api/contacts/${id}`),
   updateContact: (id, contact) => call(`/api/contacts/${id}`, { method: 'PATCH', body: JSON.stringify(contact) }),
   deleteContact: (id) => call(`/api/contacts/${id}`, { method: 'DELETE' }),
-  matchDuplicates: (candidates) => call('/api/contacts/match', { method: 'POST', body: JSON.stringify(candidates) }),
+  matchDuplicates: (candidates) => call('/api/match', { method: 'POST', body: JSON.stringify(candidates) }),
 }

@@ -5,23 +5,18 @@ import { api, clearPin } from '../lib/api.js'
 import { contactsToVCardFile } from '../../shared/vcard.js'
 import { downloadVcf } from '../lib/camera.js'
 import { getTheme, setTheme } from '../lib/theme.js'
+import { updateApp, BUILD_TIME } from '../lib/update.js'
 import Segmented from '../components/Segmented.jsx'
 
-// Fetch the newest version: refresh the service worker, clear cached app files, reload. Offline = do nothing.
-async function updateApp() {
-  if (!navigator.onLine) return false
-  try {
-    await (await navigator.serviceWorker?.getRegistration())?.update()
-    await Promise.all((await caches.keys()).map((k) => caches.delete(k)))
-  } catch { /* no service worker or cache here: the reload alone still fetches the new page */ }
-  location.reload()
-  return true
-}
+const pad = (n) => String(n).padStart(2, '0')
+const formatBuilt = (d) =>
+  `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 
-function Row({ Icon, title, hint, onClick, tone }) {
+function Row({ Icon, title, hint, onClick, tone, disabled }) {
   return (
     <li>
-      <button type="button" className="row" onClick={onClick} style={{ padding: '12px 14px', margin: 0 }}>
+      <button type="button" className="row" onClick={onClick} disabled={disabled}
+        style={{ padding: '12px 14px', margin: 0, opacity: disabled ? 0.6 : 1 }}>
         <Icon size={21} aria-hidden style={{ flex: 'none', color: tone || 'var(--accent)' }} />
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: 'block', fontWeight: 600 }}>{title}</span>
@@ -36,6 +31,7 @@ export default function Settings() {
   const nav = useNavigate()
   const [msg, setMsg] = useState('')
   const [theme, setThemeState] = useState(getTheme())
+  const [updating, setUpdating] = useState(false)
   function changeTheme(t) { setTheme(t); setThemeState(t) }
 
   async function exportAll() {
@@ -47,10 +43,13 @@ export default function Settings() {
       setMsg(`Exported ${rows.length} ${rows.length === 1 ? 'card' : 'cards'} to one contacts file.`)
     } catch { setMsg('Couldn’t export. Check your connection and try again.') }
   }
-  async function onUpdate() {
+  async function update() {
     setMsg('')
-    if (!(await updateApp())) setMsg('You’re offline. Connect to the internet to update.')
+    if (!navigator.onLine) { setMsg('You’re offline. Connect to the internet to update.'); return }
+    setUpdating(true)
+    try { await updateApp() } catch { setUpdating(false); setMsg('Update failed. Close the app fully and reopen it.') }
   }
+  const built = BUILD_TIME ? formatBuilt(new Date(BUILD_TIME)) : ''
 
   return (
     <div className="screen enter">
@@ -66,12 +65,14 @@ export default function Settings() {
 
       <ul className="list panel" style={{ marginTop: 14, padding: '4px 0', overflow: 'hidden' }}>
         <Row Icon={Export} title="Export all cards" hint="One contacts file (.vcf) with everyone in it" onClick={exportAll} />
-        <Row Icon={ArrowsClockwise} title="Update app" hint="Loads the newest version. Nothing you saved is lost." onClick={onUpdate} />
+        <Row Icon={ArrowsClockwise} title={updating ? 'Updating…' : 'Update app'} disabled={updating}
+          hint="Loads the newest version. Nothing you saved is lost." onClick={update} />
         <Row Icon={LockSimple} title="Lock app" hint="Asks for your PIN next time" tone="var(--text-2)"
           onClick={() => { clearPin(); nav('/'); location.reload() }} />
       </ul>
 
       {msg && <p role="status" className="small muted" style={{ margin: '14px 4px 0' }}>{msg}</p>}
+      {built && <p className="small muted" style={{ margin: '18px 4px 0', textAlign: 'center' }}>Version built <span className="num">{built}</span></p>}
     </div>
   )
 }

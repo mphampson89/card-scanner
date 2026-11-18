@@ -13,7 +13,8 @@ vi.mock('../lib/api.js', () => ({
   },
 }))
 
-vi.mock('../lib/camera.js', () => ({ downloadVcf: vi.fn() }))
+vi.mock('../lib/camera.js', () => ({ downloadVcf: vi.fn(), cropToBox: vi.fn(async () => 'data:image/jpeg;base64,crop'),
+  cardImageFor: vi.fn(async () => 'data:image/jpeg;base64,small') }))
 
 function renderWithShots(shots) {
   return render(
@@ -31,6 +32,7 @@ beforeEach(() => {
   api.matchDuplicates.mockResolvedValue([{ match: null }])
   api.createContacts.mockResolvedValue([{ id: '1' }])
   downloadVcf.mockClear()
+  api.createContacts.mockClear()
 })
 
 describe('Review', () => {
@@ -43,7 +45,7 @@ describe('Review', () => {
     renderWithShots([{ b64: 'x', type: 'image/jpeg' }])
     await screen.findByDisplayValue('Maya')
     fireEvent.click(screen.getByRole('button', { name: /save/i }))
-    expect(api.createContacts).toHaveBeenCalled()
+    await vi.waitFor(() => expect(api.createContacts).toHaveBeenCalled())
   })
   it('bundles the scanned cards into one .vcf for the phone on save', async () => {
     api.extract
@@ -59,5 +61,55 @@ describe('Review', () => {
     expect(content.match(/BEGIN:VCARD/g)).toHaveLength(2)
     expect(content).toContain('Maya')
     expect(content).toContain('Leo')
+  })
+
+  it('shows why a card failed and retries it', async () => {
+    api.extract.mockRejectedValueOnce(new Error('Could not parse card'))
+    renderWithShots([{ b64: 'x', type: 'image/jpeg' }])
+    expect(await screen.findByText(/did not look like a business card/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByDisplayValue('Maya')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('shows an error when saving fails', async () => {
+    api.createContacts.mockRejectedValueOnce(new Error('Request failed (500)'))
+    renderWithShots([{ b64: 'x', type: 'image/jpeg' }])
+    fireEvent.click(await screen.findByRole('button', { name: /save 1/i }))
+    expect(await screen.findByText(/Could not save to your contact list/)).toBeInTheDocument()
+  })
+
+  it('shows the card photo and opens it full screen', async () => {
+    renderWithShots([{ b64: 'x', type: 'image/jpeg', dataUrl: 'data:image/jpeg;base64,x' }])
+    expect(await screen.findByAltText('Card 1 photo')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /view card 1 photo/i }))
+    expect(screen.getByRole('dialog', { name: 'Card photo' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Close photo' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('crops the photo to the card when the AI returns a box, and can show the whole photo', async () => {
+    api.extract.mockResolvedValueOnce({ fields: { firstName: 'Maya' }, confidence: 'high',
+      cardBox: { x: 0.1, y: 0.4, width: 0.8, height: 0.5 } })
+    renderWithShots([{ b64: 'x', type: 'image/jpeg', dataUrl: 'data:image/jpeg;base64,x' }])
+    const img = await screen.findByAltText('Card 1 photo')
+    await vi.waitFor(() => expect(img.getAttribute('src')).toBe('data:image/jpeg;base64,crop'))
+    fireEvent.click(screen.getByRole('button', { name: /view card 1 photo/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Show whole photo' }))
+    expect(screen.getByAltText('Card 1 photo, full size').getAttribute('src')).toBe('data:image/jpeg;base64,x')
+  })
+
+  it('saves a small card photo with the contact', async () => {
+    renderWithShots([{ b64: 'x', type: 'image/jpeg', dataUrl: 'data:image/jpeg;base64,x' }])
+    await screen.findByDisplayValue('Maya')
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+    await vi.waitFor(() => expect(api.createContacts).toHaveBeenCalled())
+    expect(api.createContacts.mock.lastCall[0][0].cardImage).toBe('data:image/jpeg;base64,small')
+  })
+
+  it('says so when the duplicate check fails instead of hiding it', async () => {
+    api.matchDuplicates.mockRejectedValueOnce(new Error('Request failed (405)'))
+    renderWithShots([{ b64: 'x', type: 'image/jpeg' }])
+    expect(await screen.findByText(/Could not check for duplicates/)).toBeInTheDocument()
   })
 })

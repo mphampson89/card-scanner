@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Cards, Camera, GearSix } from '@phosphor-icons/react'
+import { PICK_EVENT } from '../screens/Capture.jsx'
 
 const TABS = [
   { to: '/', label: 'Cards', Icon: Cards },
@@ -22,8 +23,13 @@ export default function TabBar() {
           if (primary) {
             return (
               <div key={to} style={{ display: 'flex', justifyContent: 'center' }}>
-                <button type="button" onClick={() => nav(to)} aria-label="Scan a card"
-                  aria-current={active ? 'page' : undefined} className="btn btn-primary"
+                <button type="button" aria-label="Scan a card" aria-current={active ? 'page' : undefined}
+                  onClick={() => {
+                    // Already on the scan screen: open the file picker instead of a no-op navigation.
+                    if (pathname === to) window.dispatchEvent(new Event(PICK_EVENT))
+                    else nav(to)
+                  }}
+                  className="btn btn-primary"
                   style={{ width: 'auto', minHeight: 46, padding: '0 22px', borderRadius: 999, gap: 7 }}>
                   <Icon size={20} weight="bold" aria-hidden /> {label}
                 </button>

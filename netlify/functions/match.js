@@ -7,7 +7,10 @@ export default async function handler(req) {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
   const candidates = await req.json()
-  const existingRows = await sql`SELECT * FROM contacts`
+  const existingRows = await sql`
+    SELECT id, first_name, last_name, title, company, work_phone, mobile_phone, email, website,
+           street, city, province, postal_code, country, notes
+    FROM contacts`
   const existing = existingRows.map(rowToContact)
 
   const results = candidates.map((cand) => {
@@ -20,4 +23,4 @@ export default async function handler(req) {
   return json(results)
 }
 
-export const config = { path: '/api/contacts/match' }
+export const config = { path: '/api/match' }
