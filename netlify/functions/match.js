@@ -23,4 +23,4 @@ export default async function handler(req) {
   return json(results)
 }
 
-export const config = { path: '/api/contacts/match' }
+export const config = { path: '/api/match' }

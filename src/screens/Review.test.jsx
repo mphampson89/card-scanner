@@ -106,4 +106,10 @@ describe('Review', () => {
     await vi.waitFor(() => expect(api.createContacts).toHaveBeenCalled())
     expect(api.createContacts.mock.lastCall[0][0].cardImage).toBe('data:image/jpeg;base64,small')
   })
+
+  it('says so when the duplicate check fails instead of hiding it', async () => {
+    api.matchDuplicates.mockRejectedValueOnce(new Error('Request failed (405)'))
+    renderWithShots([{ b64: 'x', type: 'image/jpeg' }])
+    expect(await screen.findByText(/Could not check for duplicates/)).toBeInTheDocument()
+  })
 })

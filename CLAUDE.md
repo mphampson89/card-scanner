@@ -37,6 +37,9 @@ Card scanner PWA. Snap or upload a business card photo, extract a contact, dedup
   in _db.js. Review saves a 900px cropped JPEG (cardImageFor). List and match endpoints exclude
   the image; GET /api/contacts/:id returns it. PATCH keeps the stored image unless a new one is sent.
 - 2026-11-18: Contact screen shows an Address row (formatAddress) that opens Google Maps.
+- 2026-11-18: Duplicate check moved from /api/contacts/match to /api/match (it shared a pattern
+  with /api/contacts/:id). Review now shows an alert if the duplicate check fails. Full-size photo
+  viewer is pushed into history (useHistoryOverlay) so phone Back closes it.
 
 ## Active Worktrees (if applicable)
 None.
@@ -52,6 +55,8 @@ None.
 [Update at start of session]
 
 ## Architecture Notes
+- Keep function paths unique: nothing else under `/api/contacts/` besides `:id`, or the
+  dynamic route can catch it.
 - `src/screens/Capture.jsx` exports `PICK_EVENT`; `src/components/TabBar.jsx` dispatches it on
   `window` when + is pressed on /scan so Capture can open its hidden file input.
 - Never put `capture="environment"` on the upload input. On Android it forces the camera app and

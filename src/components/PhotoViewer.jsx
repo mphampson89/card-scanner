@@ -1,3 +1,5 @@
+import { useLocation, useNavigate } from 'react-router-dom'
+
 // Full-screen photo overlay. Tap anywhere or × to close. Optional toggle between two images.
 export default function PhotoViewer({ src, alt, onClose, toggle }) {
   return (
@@ -18,4 +20,15 @@ export default function PhotoViewer({ src, alt, onClose, toggle }) {
       )}
     </div>
   )
+}
+
+// Keeps an open overlay in browser history, so the phone's Back button closes it
+// instead of leaving the screen. Returns [value, open(value), close()].
+export function useHistoryOverlay() {
+  const loc = useLocation()
+  const nav = useNavigate()
+  const value = loc.state?.overlay ?? null
+  const open = (v) => nav(loc.pathname + loc.search, { state: { ...(loc.state || {}), overlay: v } })
+  const close = () => nav(-1)
+  return [value, open, close]
 }
