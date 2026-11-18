@@ -7,6 +7,7 @@ import TabBar from '../components/TabBar.jsx'
 
 vi.mock('../lib/camera.js', () => ({
   resizeImage: vi.fn(async () => ({ b64: 'b', type: 'image/jpeg', dataUrl: 'data:image/jpeg;base64,b' })),
+  looksHeic: (f) => /\.(heic|heif)$/i.test(f.name || ''),
 }))
 
 const renderCapture = () => render(<MemoryRouter><Capture /></MemoryRouter>)
@@ -40,7 +41,7 @@ describe('Capture', () => {
     expect(inputs.some((i) => i.hasAttribute('capture'))).toBe(true)
     const upload = inputs.find((i) => !i.hasAttribute('capture'))
     expect(upload).toBeTruthy()
-    expect(upload.accept).toBe('image/*')
+    expect(upload.accept).toBe('image/*,.heic,.heif')
     expect(screen.getByText('Upload from files')).toBeInTheDocument()
   })
 

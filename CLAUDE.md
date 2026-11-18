@@ -37,6 +37,7 @@ Card scanner PWA. Snap or upload a business card photo, extract a contact, dedup
   in _db.js. Review saves a 900px cropped JPEG (cardImageFor). List and match endpoints exclude
   the image; GET /api/contacts/:id returns it. PATCH keeps the stored image unless a new one is sent.
 - 2026-11-18: Contact screen shows an Address row (formatAddress) that opens Google Maps.
+- 2026-11-18: HEIC upload support via heic-to (see Known Issues).
 - 2026-11-18: Duplicate check moved from /api/contacts/match to /api/match (it shared a pattern
   with /api/contacts/:id). Review now shows an alert if the duplicate check fails. Full-size photo
   viewer is pushed into history (useHistoryOverlay) so phone Back closes it.
@@ -46,8 +47,9 @@ None.
 
 ## Known Issues or Blockers
 - Uploads accept images only. vCard (.vcf) and PDF imports are not supported.
-- HEIC/HEIF (iPhone) photos can't be decoded by Chrome/Firefox on Android or desktop. The app now
-  says so; converting them would need a library such as heic2any (not added).
+- HEIC/HEIF (iPhone) photos: Chrome/Firefox can't decode them, so camera.js converts them with
+  `heic-to` (LGPL-3.0, libheif in WebAssembly). It is lazy-loaded as its own ~790 KB gzipped chunk
+  only when a HEIC file is picked. Upload inputs accept `image/*,.heic,.heif`; camera inputs stay `image/*`.
 - Installed PWA can serve a cached build after a deploy; use Settings > Update app, close fully
   and reopen, or bump the cache name in public/sw.js.
 

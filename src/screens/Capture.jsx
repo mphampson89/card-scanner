@@ -1,19 +1,18 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { resizeImage } from '../lib/camera.js'
+import { resizeImage, looksHeic } from '../lib/camera.js'
 import Segmented from '../components/Segmented.jsx'
 
 export const PICK_EVENT = 'card-scanner:pick'
 
-const isHeic = (f) => /\.(heic|heif)$/i.test(f.name || '') || /hei[cf]/i.test(f.type || '')
 
 export function describeFailure(failed, total) {
   const names = failed.map((f) => f.name || 'photo').join(', ')
   const lead = failed.length === total
     ? `Could not open ${names}.`
     : `Skipped ${failed.length} of ${total} photos: ${names}.`
-  if (failed.some(isHeic)) {
-    return `${lead} It is an iPhone HEIC photo, which this browser cannot read. Take a screenshot of it and upload the screenshot, or ask for a JPG.`
+  if (failed.some(looksHeic)) {
+    return `${lead} It is an iPhone HEIC photo and could not be converted. Check your connection and try again, or upload a screenshot of it instead.`
   }
   return `${lead} The file may not be a photo or may be damaged. Try a screenshot of it instead.`
 }
@@ -23,6 +22,7 @@ export default function Capture() {
   const [batch, setBatch] = useState(false)
   const [shots, setShots] = useState([])
   const [adding, setAdding] = useState(false)
+  const [converting, setConverting] = useState(false)
   const [error, setError] = useState('')
   const uploadRef = useRef(null)
 
@@ -38,6 +38,7 @@ export default function Capture() {
     e.target.value = ''
     if (!files.length) return
     setError('')
+    setConverting(files.some(looksHeic))
     setAdding(true)
     const resized = []
     const failed = []
@@ -82,7 +83,7 @@ export default function Capture() {
 
       {adding && (
         <p role="status" style={{ marginTop: 14, fontSize: 13, color: 'var(--text-2)', textAlign: 'center' }}>
-          Preparing photo…
+          {converting ? 'Converting iPhone photo…' : 'Preparing photo…'}
         </p>
       )}
       {error && (
@@ -106,7 +107,7 @@ export default function Capture() {
           <label className="btn-ghost" aria-disabled={adding}
             style={{ flex: 1, textAlign: 'center', opacity: adding ? 0.55 : 1 }}>
             Upload from files
-            <input ref={uploadRef} type="file" accept="image/*" onChange={onFiles}
+            <input ref={uploadRef} type="file" accept="image/*,.heic,.heif" onChange={onFiles}
               disabled={adding} style={{ display: 'none' }} />
           </label>
         </div>
@@ -123,7 +124,7 @@ export default function Capture() {
           <label className="btn-ghost" aria-disabled={adding}
             style={{ flex: 1, textAlign: 'center', opacity: adding ? 0.55 : 1 }}>
             Upload photos
-            <input ref={uploadRef} type="file" accept="image/*" multiple onChange={onFiles}
+            <input ref={uploadRef} type="file" accept="image/*,.heic,.heif" multiple onChange={onFiles}
               disabled={adding} style={{ display: 'none' }} />
           </label>
         </div>
