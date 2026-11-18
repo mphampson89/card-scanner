@@ -5,12 +5,23 @@ import { contactsToVCardFile } from '../../shared/vcard.js'
 import { downloadVcf } from '../lib/camera.js'
 import { getTheme, setTheme } from '../lib/theme.js'
 import Segmented from '../components/Segmented.jsx'
+import { updateApp, BUILD_TIME } from '../lib/update.js'
+
+const pad = (n) => String(n).padStart(2, '0')
+const formatBuilt = (d) =>
+  `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 
 export default function Settings() {
   const nav = useNavigate()
   const [msg, setMsg] = useState('')
   const [theme, setThemeState] = useState(getTheme())
+  const [updating, setUpdating] = useState(false)
   function changeTheme(t) { setTheme(t); setThemeState(t) }
+  async function update() {
+    setUpdating(true)
+    try { await updateApp() } catch { setUpdating(false); setMsg('Update failed. Close the app fully and reopen it.') }
+  }
+  const built = BUILD_TIME ? formatBuilt(new Date(BUILD_TIME)) : ''
   async function exportAll() {
     setMsg('')
     const rows = await api.listContacts()
@@ -32,6 +43,12 @@ export default function Settings() {
         onClick={() => { clearPin(); nav('/'); location.reload() }}>
         Lock app
       </button>
+      <button className="btn-ghost" style={{ marginTop: 12 }} disabled={updating} onClick={update}>
+        {updating ? 'Updating…' : 'Update app'}
+      </button>
+      {built && <p style={{ color: 'var(--text-2)', fontSize: 12, margin: '10px 2px 0', textAlign: 'center' }}>
+        Version built {built}
+      </p>}
     </div>
   )
 }
