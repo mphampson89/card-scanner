@@ -36,6 +36,7 @@ Card scanner PWA. Snap or upload a business card photo, extract a contact, dedup
   New column contacts.card_image (migrations/0002_card_image.sql), auto-applied by ensureSchema()
   in _db.js. Review saves a 900px cropped JPEG (cardImageFor). List and match endpoints exclude
   the image; GET /api/contacts/:id returns it. PATCH keeps the stored image unless a new one is sent.
+- 2026-11-18: Contact screen shows an Address row (formatAddress) that opens Google Maps.
 
 ## Active Worktrees (if applicable)
 None.

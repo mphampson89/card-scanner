@@ -7,6 +7,12 @@ import { downloadVcf } from '../lib/camera.js'
 import Avatar from '../components/Avatar.jsx'
 import PhotoViewer from '../components/PhotoViewer.jsx'
 
+// One line for display: "Suite 510, 1100 Melville St., Vancouver, BC V6E 4A6, Canada"
+export function formatAddress(c) {
+  const region = [c.province, c.postalCode].filter(Boolean).join(' ')
+  return [c.street, c.city, region, c.country].filter(Boolean).join(', ')
+}
+
 const LABELS = { workPhone: 'Work', mobilePhone: 'Mobile', email: 'Email', website: 'Website' }
 
 export default function Contact() {
@@ -72,6 +78,16 @@ export default function Contact() {
                 style={{ fontSize: 14, textAlign: 'right', wordBreak: 'break-word' }}>{c[k]}</span>
             </div>
           ))}
+          {formatAddress(c) && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, padding: '12px 0', borderBottom: '1px solid var(--line)' }}>
+              <span style={{ color: 'var(--text-2)', fontSize: 13 }}>Address</span>
+              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(formatAddress(c))}`}
+                target="_blank" rel="noreferrer"
+                style={{ fontSize: 14, textAlign: 'right', wordBreak: 'break-word', color: 'inherit', textDecoration: 'none' }}>
+                {formatAddress(c)}
+              </a>
+            </div>
+          )}
           {confirmDel ? (
             <div className="card" style={{ padding: 14, marginTop: 18 }}>
               <p style={{ margin: '0 0 12px', fontSize: 14 }}>Delete this contact? This can't be undone.</p>

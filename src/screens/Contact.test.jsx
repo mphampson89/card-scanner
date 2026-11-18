@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import Contact from './Contact.jsx'
+import Contact, { formatAddress } from './Contact.jsx'
 import { api } from '../lib/api.js'
 
 vi.mock('../lib/api.js', () => ({ api: { getContact: vi.fn(), updateContact: vi.fn(async () => ({})) } }))
@@ -41,5 +41,21 @@ describe('Contact', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
     await vi.waitFor(() => expect(api.updateContact).toHaveBeenCalled())
     expect(api.updateContact.mock.calls[0][1]).not.toHaveProperty('cardImage')
+  })
+
+  it('shows the address as one line that opens in maps', async () => {
+    api.getContact.mockResolvedValue({ ...base, cardImage: '', street: 'Suite 510, 1100 Melville St.',
+      city: 'Vancouver', province: 'BC', postalCode: 'V6E 4A6', country: 'Canada' })
+    renderContact()
+    const link = await screen.findByText('Suite 510, 1100 Melville St., Vancouver, BC V6E 4A6, Canada')
+    expect(link.getAttribute('href')).toContain('google.com/maps/search')
+  })
+
+  it('hides the address row when there is no address', async () => {
+    api.getContact.mockResolvedValue({ ...base, cardImage: '' })
+    renderContact()
+    await screen.findByText('TC')
+    expect(screen.queryByText('Address')).not.toBeInTheDocument()
+    expect(formatAddress({ city: 'Calgary', province: 'AB' })).toBe('Calgary, AB')
   })
 })
