@@ -1,26 +1,48 @@
 const MAX_PX = 1600
 const QUALITY = 0.82
 
-export function resizeImage(file) {
+function loadImage(blob) {
   return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file)
+    const url = URL.createObjectURL(blob)
     const img = new Image()
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-      let { width, height } = img
-      if (width > MAX_PX || height > MAX_PX) {
-        if (width >= height) { height = Math.round(height * MAX_PX / width); width = MAX_PX }
-        else { width = Math.round(width * MAX_PX / height); height = MAX_PX }
-      }
-      const canvas = document.createElement('canvas')
-      canvas.width = width; canvas.height = height
-      canvas.getContext('2d').drawImage(img, 0, 0, width, height)
-      const dataUrl = canvas.toDataURL('image/jpeg', QUALITY)
-      resolve({ b64: dataUrl.split(',')[1], type: 'image/jpeg', dataUrl })
-    }
-    img.onerror = reject
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img) }
+    img.onerror = (e) => { URL.revokeObjectURL(url); reject(e) }
     img.src = url
   })
+}
+
+export const looksHeic = (f) => /\.(heic|heif)$/i.test(f.name || '') || /hei[cf]/i.test(f.type || '')
+
+// iPhone HEIC photos can't be opened by Chrome/Firefox. Convert them to JPEG in the browser.
+// The converter (~3 MB) is only downloaded the first time a HEIC file is picked.
+export async function heicToJpeg(file) {
+  const { heicTo, isHeic } = await import('heic-to')
+  if (!looksHeic(file) && !(await isHeic(file))) throw new Error('not heic')
+  return heicTo({ blob: file, type: 'image/jpeg', quality: 0.92 })
+}
+
+async function openImage(file) {
+  if (looksHeic(file)) return loadImage(await heicToJpeg(file))
+  try {
+    return await loadImage(file)
+  } catch (e) {
+    // Some HEIC files arrive with no name or type; check the contents before giving up.
+    try { return loadImage(await heicToJpeg(file)) } catch { throw e }
+  }
+}
+
+export async function resizeImage(file) {
+  const img = await openImage(file)
+  let { width, height } = img
+  if (width > MAX_PX || height > MAX_PX) {
+    if (width >= height) { height = Math.round(height * MAX_PX / width); width = MAX_PX }
+    else { width = Math.round(width * MAX_PX / height); height = MAX_PX }
+  }
+  const canvas = document.createElement('canvas')
+  canvas.width = width; canvas.height = height
+  canvas.getContext('2d').drawImage(img, 0, 0, width, height)
+  const dataUrl = canvas.toDataURL('image/jpeg', QUALITY)
+  return { b64: dataUrl.split(',')[1], type: 'image/jpeg', dataUrl }
 }
 
 export function downloadVcf(filename, content) {
