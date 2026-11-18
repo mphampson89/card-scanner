@@ -13,7 +13,7 @@ vi.mock('../lib/api.js', () => ({
   },
 }))
 
-vi.mock('../lib/camera.js', () => ({ downloadVcf: vi.fn() }))
+vi.mock('../lib/camera.js', () => ({ downloadVcf: vi.fn(), cropToBox: vi.fn(async () => 'data:image/jpeg;base64,crop') }))
 
 function renderWithShots(shots) {
   return render(
@@ -75,5 +75,25 @@ describe('Review', () => {
     renderWithShots([{ b64: 'x', type: 'image/jpeg' }])
     fireEvent.click(await screen.findByRole('button', { name: /save 1/i }))
     expect(await screen.findByText(/Could not save to your contact list/)).toBeInTheDocument()
+  })
+
+  it('shows the card photo and opens it full screen', async () => {
+    renderWithShots([{ b64: 'x', type: 'image/jpeg', dataUrl: 'data:image/jpeg;base64,x' }])
+    expect(await screen.findByAltText('Card 1 photo')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /view card 1 photo/i }))
+    expect(screen.getByRole('dialog', { name: 'Card photo' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Close photo' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('crops the photo to the card when the AI returns a box, and can show the whole photo', async () => {
+    api.extract.mockResolvedValueOnce({ fields: { firstName: 'Maya' }, confidence: 'high',
+      cardBox: { x: 0.1, y: 0.4, width: 0.8, height: 0.5 } })
+    renderWithShots([{ b64: 'x', type: 'image/jpeg', dataUrl: 'data:image/jpeg;base64,x' }])
+    const img = await screen.findByAltText('Card 1 photo')
+    await vi.waitFor(() => expect(img.getAttribute('src')).toBe('data:image/jpeg;base64,crop'))
+    fireEvent.click(screen.getByRole('button', { name: /view card 1 photo/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Show whole photo' }))
+    expect(screen.getByAltText('Card 1 photo, full size').getAttribute('src')).toBe('data:image/jpeg;base64,x')
   })
 })

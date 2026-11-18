@@ -27,6 +27,11 @@ Card scanner PWA. Snap or upload a business card photo, extract a contact, dedup
   "Try again", and a save error. sw.js cache bumped to v3.
 - 2026-11-18: Settings has an "Update app" button (src/lib/update.js: refresh service worker,
   clear caches, reload) and shows the build time (__BUILD_TIME__ defined in vite.config.js).
+- 2026-11-18: Review shows the card photo above the fields (pinned while scrolling in single
+  mode); tap opens it full screen. Uses shots[i].dataUrl passed from Capture.
+- 2026-11-18: Crop to card. extract.js asks the model for cardBox (0-1 fractions); coerceBox
+  validates it. Review crops with cropToBox (src/lib/camera.js, 4% margin) and falls back to the
+  full photo if the box is missing. Full-screen view has "Show whole photo".
 
 ## Active Worktrees (if applicable)
 None.

@@ -13,6 +13,21 @@ describe('parseExtraction', () => {
     const text = '```json\n{"firstName":"Maya","lastName":"R","mobilePhone":"+1"}\n```'
     expect(parseExtraction(text).fields.firstName).toBe('Maya')
   })
+  it('returns the card box when the model gives one', () => {
+    const out = parseExtraction(JSON.stringify({ firstName: 'T', cardBox: { x: 0.1, y: 0.45, width: 0.8, height: 0.45 } }))
+    expect(out.cardBox).toEqual({ x: 0.1, y: 0.45, width: 0.8, height: 0.45 })
+  })
+  it('drops a missing, tiny or malformed card box', () => {
+    expect(parseExtraction('{"firstName":"T"}').cardBox).toBeNull()
+    expect(parseExtraction('{"cardBox":null}').cardBox).toBeNull()
+    expect(parseExtraction('{"cardBox":{"x":0.5,"y":0.5,"width":0.01,"height":0.5}}').cardBox).toBeNull()
+    expect(parseExtraction('{"cardBox":{"x":"a","y":0,"width":1,"height":1}}').cardBox).toBeNull()
+  })
+  it('clamps a card box that runs off the edge', () => {
+    const out = parseExtraction('{"cardBox":{"x":0.2,"y":0.5,"width":0.9,"height":0.7}}')
+    expect(out.cardBox.width).toBeCloseTo(0.8)
+    expect(out.cardBox.height).toBeCloseTo(0.5)
+  })
   it('throws on non-JSON', () => {
     expect(() => parseExtraction('not json')).toThrow()
   })
