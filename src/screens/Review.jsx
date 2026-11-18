@@ -3,7 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { api } from '../lib/api.js'
 import { CAMEL_KEYS, emptyContact } from '../../shared/fields.js'
 import { contactsToVCardFile, vcardFilename } from '../../shared/vcard.js'
-import { downloadVcf, cropToBox } from '../lib/camera.js'
+import { downloadVcf, cropToBox, cardImageFor } from '../lib/camera.js'
+import PhotoViewer from '../components/PhotoViewer.jsx'
 
 const LABELS = {
   firstName: 'First name', lastName: 'Last name', title: 'Title', company: 'Company',
@@ -111,11 +112,15 @@ export default function Review() {
       const filename = kept.length === 1 ? vcardFilename(kept[0]) : 'scanned-contacts.vcf'
       downloadVcf(filename, contactsToVCardFile(kept))
     }
-    const toCreate = cards.filter((c) => c.action === 'save').map((c) => c.fields)
+    // Attach a small cropped copy of each card photo so the contact screen can show it.
+    const images = await Promise.all(cards.map((c, i) => shots[i]?.dataUrl
+      ? cardImageFor(shots[i].dataUrl, c.cardBox).catch(() => '') : ''))
+    const withImage = (c) => ({ ...c.fields, cardImage: images[cards.indexOf(c)] || undefined })
+    const toCreate = cards.filter((c) => c.action === 'save').map(withImage)
     const toUpdate = cards.filter((c) => c.action === 'update' && c.dupe)
     try {
       if (toCreate.length) await api.createContacts(toCreate)
-      for (const c of toUpdate) await api.updateContact(c.dupe.id, c.fields)
+      for (const c of toUpdate) await api.updateContact(c.dupe.id, withImage(c))
     } catch (e) {
       setSaveError(`Could not save to your contact list: ${e.message}. The .vcf file was still downloaded.`)
       setSaving(false)
@@ -206,23 +211,10 @@ export default function Review() {
         </div>
       ))}
       {viewing !== null && (
-        <div role="dialog" aria-label="Card photo" onClick={() => setViewing(null)}
-          style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,.92)',
-            overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <img src={wholePhoto ? shots[viewing].dataUrl : photo(viewing)} alt={`Card ${viewing + 1} photo, full size`}
-            style={{ maxWidth: 'none', width: '100%', height: 'auto' }} />
-          {crops[viewing] && (
-            <button onClick={(e) => { e.stopPropagation(); setWholePhoto((w) => !w) }}
-              style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-                padding: '10px 18px', borderRadius: 999, border: 0, fontSize: 14,
-                background: 'rgba(255,255,255,.18)', color: '#fff' }}>
-              {wholePhoto ? 'Show card only' : 'Show whole photo'}
-            </button>
-          )}
-          <button onClick={() => setViewing(null)} aria-label="Close photo"
-            style={{ position: 'fixed', top: 14, right: 14, width: 36, height: 36, borderRadius: 999,
-              border: 0, background: 'rgba(255,255,255,.18)', color: '#fff', fontSize: 20 }}>×</button>
-        </div>
+        <PhotoViewer src={wholePhoto ? shots[viewing].dataUrl : photo(viewing)}
+          alt={`Card ${viewing + 1} photo, full size`} onClose={() => setViewing(null)}
+          toggle={crops[viewing] ? { label: wholePhoto ? 'Show card only' : 'Show whole photo',
+            onClick: () => setWholePhoto((w) => !w) } : null} />
       )}
       {saveError && (
         <div role="alert" style={{ marginTop: 16, padding: 10, borderRadius: 10, fontSize: 12,

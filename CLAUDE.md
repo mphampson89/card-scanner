@@ -32,6 +32,11 @@ Card scanner PWA. Snap or upload a business card photo, extract a contact, dedup
 - 2026-11-18: Crop to card. extract.js asks the model for cardBox (0-1 fractions); coerceBox
   validates it. Review crops with cropToBox (src/lib/camera.js, 4% margin) and falls back to the
   full photo if the box is missing. Full-screen view has "Show whole photo".
+- 2026-11-18: Contact screen shows the saved card photo instead of initials; tap for full screen.
+  New column contacts.card_image (migrations/0002_card_image.sql), auto-applied by ensureSchema()
+  in _db.js. Review saves a 900px cropped JPEG (cardImageFor). List and match endpoints exclude
+  the image; GET /api/contacts/:id returns it. PATCH keeps the stored image unless a new one is sent.
+- 2026-11-18: Contact screen shows an Address row (formatAddress) that opens Google Maps.
 
 ## Active Worktrees (if applicable)
 None.
