@@ -13,7 +13,7 @@ Card scanner PWA. Snap or upload a business card photo, extract a contact, dedup
 ## Deploy
 - Hosted on Netlify. `netlify.toml`: build `npm run build`, publish `dist`, SPA redirect to `/index.html`.
 - Deploys automatically on push to `main`. No GitHub Actions workflow.
-- The scanner's own Netlify URL is not recorded in this repo. Fill in here: [URL]
+- Live site: https://cardscannermph.netlify.app/
 - `public/_headers` sets `frame-ancestors` so the app can run framed inside the Bridge shell
   (https://bridge-mph.netlify.app). Those URLs are the parent app, not this site.
 - The old GitHub Pages address (mphampson89.github.io/card-scanner/) is no longer the deploy target.
