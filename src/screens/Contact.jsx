@@ -5,7 +5,7 @@ import { CAMEL_KEYS } from '../../shared/fields.js'
 import { contactToVCard, vcardFilename } from '../../shared/vcard.js'
 import { downloadVcf } from '../lib/camera.js'
 import Avatar from '../components/Avatar.jsx'
-import PhotoViewer from '../components/PhotoViewer.jsx'
+import PhotoViewer, { useHistoryOverlay } from '../components/PhotoViewer.jsx'
 
 // One line for display: "Suite 510, 1100 Melville St., Vancouver, BC V6E 4A6, Canada"
 export function formatAddress(c) {
@@ -21,7 +21,7 @@ export default function Contact() {
   const [c, setC] = useState(null)
   const [editing, setEditing] = useState(false)
   const [confirmDel, setConfirmDel] = useState(false)
-  const [viewing, setViewing] = useState(false)
+  const [viewing, openViewer, closeViewer] = useHistoryOverlay()
 
   useEffect(() => {
     api.getContact(id).then(setC).catch(() => setC(null))
@@ -37,11 +37,11 @@ export default function Contact() {
 
   return (
     <div style={{ padding: '24px 18px 0' }}>
-      {viewing && <PhotoViewer src={c.cardImage} alt="Business card, full size" onClose={() => setViewing(false)} />}
+      {viewing && <PhotoViewer src={c.cardImage} alt="Business card, full size" onClose={closeViewer} />}
       <button onClick={() => nav('/')} style={{ background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 14 }}>‹ Cards</button>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 8 }}>
         {c.cardImage ? (
-          <button onClick={() => setViewing(true)} aria-label="View card photo full screen"
+          <button onClick={() => openViewer(true)} aria-label="View card photo full screen"
             style={{ padding: 0, border: 0, background: 'none', cursor: 'zoom-in' }}>
             <img src={c.cardImage} alt="Business card"
               style={{ height: 96, maxWidth: 220, objectFit: 'cover', borderRadius: 12, display: 'block',

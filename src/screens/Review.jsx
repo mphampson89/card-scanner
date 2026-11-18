@@ -4,7 +4,7 @@ import { api } from '../lib/api.js'
 import { CAMEL_KEYS, emptyContact } from '../../shared/fields.js'
 import { contactsToVCardFile, vcardFilename } from '../../shared/vcard.js'
 import { downloadVcf, cropToBox, cardImageFor } from '../lib/camera.js'
-import PhotoViewer from '../components/PhotoViewer.jsx'
+import PhotoViewer, { useHistoryOverlay } from '../components/PhotoViewer.jsx'
 
 const LABELS = {
   firstName: 'First name', lastName: 'Last name', title: 'Title', company: 'Company',
@@ -41,7 +41,8 @@ export default function Review() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [retrying, setRetrying] = useState(null)
-  const [viewing, setViewing] = useState(null)
+  const [viewing, openViewer, closeViewer] = useHistoryOverlay()
+  const [matchError, setMatchError] = useState('')
   const [wholePhoto, setWholePhoto] = useState(false)
   const [crops, setCrops] = useState({})
 
@@ -71,7 +72,10 @@ export default function Review() {
         dupe: null,
         action: 'save',
       }))
-      const matches = await api.matchDuplicates(initial.map((c) => c.fields)).catch(() => [])
+      const matches = await api.matchDuplicates(initial.map((c) => c.fields)).catch((e) => {
+        setMatchError(`Could not check for duplicates (${e.message}). Check your card list before saving.`)
+        return []
+      })
       setCards(initial.map((c, i) => ({ ...c, dupe: matches[i]?.match || null,
         action: matches[i]?.match ? 'skip' : 'save' })))
       setLoading(false)
@@ -152,6 +156,10 @@ export default function Review() {
   return (
     <div style={{ padding: '28px 18px 0' }}>
       <h1 style={{ fontSize: 28, fontWeight: 600 }}>{single ? 'Review details' : `Review ${cards.length} cards`}</h1>
+      {matchError && (
+        <div role="alert" style={{ background: 'color-mix(in srgb, var(--warn) 16%, transparent)',
+          borderRadius: 10, padding: 10, marginBottom: 10, fontSize: 12 }}>{matchError}</div>
+      )}
       {cards.map((card, idx) => (
         <div key={idx} style={{ borderTop: idx ? '1px solid var(--line)' : 'none', paddingTop: idx ? 16 : 8, marginTop: idx ? 16 : 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -163,7 +171,7 @@ export default function Review() {
             </span>
           </div>
           {shots[idx]?.dataUrl && (
-            <button onClick={() => { setWholePhoto(false); setViewing(idx) }} aria-label={`View card ${idx + 1} photo full screen`}
+            <button onClick={() => { setWholePhoto(false); openViewer(idx) }} aria-label={`View card ${idx + 1} photo full screen`}
               style={{ display: 'block', width: '100%', padding: 0, border: 0, background: 'var(--bg, transparent)',
                 marginBottom: 12, cursor: 'zoom-in',
                 ...(single ? { position: 'sticky', top: 0, zIndex: 2, paddingTop: 6, paddingBottom: 6 } : {}) }}>
@@ -212,7 +220,7 @@ export default function Review() {
       ))}
       {viewing !== null && (
         <PhotoViewer src={wholePhoto ? shots[viewing].dataUrl : photo(viewing)}
-          alt={`Card ${viewing + 1} photo, full size`} onClose={() => setViewing(null)}
+          alt={`Card ${viewing + 1} photo, full size`} onClose={closeViewer}
           toggle={crops[viewing] ? { label: wholePhoto ? 'Show card only' : 'Show whole photo',
             onClick: () => setWholePhoto((w) => !w) } : null} />
       )}
