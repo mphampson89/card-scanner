@@ -76,4 +76,13 @@ describe('Review', () => {
     fireEvent.click(await screen.findByRole('button', { name: /save 1/i }))
     expect(await screen.findByText(/Could not save to your contact list/)).toBeInTheDocument()
   })
+
+  it('shows the card photo and opens it full screen', async () => {
+    renderWithShots([{ b64: 'x', type: 'image/jpeg', dataUrl: 'data:image/jpeg;base64,x' }])
+    expect(await screen.findByAltText('Card 1 photo')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /view card 1 photo/i }))
+    expect(screen.getByRole('dialog', { name: 'Card photo' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Close photo' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
 })

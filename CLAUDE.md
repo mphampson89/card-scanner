@@ -27,6 +27,8 @@ Card scanner PWA. Snap or upload a business card photo, extract a contact, dedup
   "Try again", and a save error. sw.js cache bumped to v3.
 - 2026-11-18: Settings has an "Update app" button (src/lib/update.js: refresh service worker,
   clear caches, reload) and shows the build time (__BUILD_TIME__ defined in vite.config.js).
+- 2026-11-18: Review shows the card photo above the fields (pinned while scrolling in single
+  mode); tap opens it full screen. Uses shots[i].dataUrl passed from Capture.
 
 ## Active Worktrees (if applicable)
 None.

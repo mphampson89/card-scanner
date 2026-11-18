@@ -40,6 +40,7 @@ export default function Review() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [retrying, setRetrying] = useState(null)
+  const [viewing, setViewing] = useState(null)
   const started = useRef(false)
 
   useEffect(() => {
@@ -141,6 +142,16 @@ export default function Review() {
               {card.confidence === 'high' ? 'High confidence' : 'Please check'}
             </span>
           </div>
+          {shots[idx]?.dataUrl && (
+            <button onClick={() => setViewing(idx)} aria-label={`View card ${idx + 1} photo full screen`}
+              style={{ display: 'block', width: '100%', padding: 0, border: 0, background: 'var(--bg, transparent)',
+                marginBottom: 12, cursor: 'zoom-in',
+                ...(single ? { position: 'sticky', top: 0, zIndex: 2, paddingTop: 6, paddingBottom: 6 } : {}) }}>
+              <img src={shots[idx].dataUrl} alt={`Card ${idx + 1} photo`}
+                style={{ width: '100%', maxHeight: single ? '26vh' : 160, objectFit: 'contain',
+                  borderRadius: 12, display: 'block', background: 'var(--surface)' }} />
+            </button>
+          )}
           {card.error && (
             <div role="alert" style={{ background: 'color-mix(in srgb, var(--warn) 16%, transparent)',
               borderRadius: 10, padding: 10, marginBottom: 10, fontSize: 12 }}>
@@ -179,6 +190,17 @@ export default function Review() {
           ))}
         </div>
       ))}
+      {viewing !== null && (
+        <div role="dialog" aria-label="Card photo" onClick={() => setViewing(null)}
+          style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,.92)',
+            overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img src={shots[viewing].dataUrl} alt={`Card ${viewing + 1} photo, full size`}
+            style={{ maxWidth: 'none', width: '100%', height: 'auto' }} />
+          <button onClick={() => setViewing(null)} aria-label="Close photo"
+            style={{ position: 'fixed', top: 14, right: 14, width: 36, height: 36, borderRadius: 999,
+              border: 0, background: 'rgba(255,255,255,.18)', color: '#fff', fontSize: 20 }}>×</button>
+        </div>
+      )}
       {saveError && (
         <div role="alert" style={{ marginTop: 16, padding: 10, borderRadius: 10, fontSize: 12,
           background: 'color-mix(in srgb, var(--warn) 16%, transparent)' }}>{saveError}</div>
