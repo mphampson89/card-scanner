@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { api } from '../lib/api.js'
 import { CAMEL_KEYS, emptyContact } from '../../shared/fields.js'
 import { contactsToVCardFile, vcardFilename } from '../../shared/vcard.js'
-import { downloadVcf } from '../lib/camera.js'
+import { downloadVcf, cropToBox } from '../lib/camera.js'
 
 const LABELS = {
   firstName: 'First name', lastName: 'Last name', title: 'Title', company: 'Company',
@@ -41,6 +41,20 @@ export default function Review() {
   const [saveError, setSaveError] = useState('')
   const [retrying, setRetrying] = useState(null)
   const [viewing, setViewing] = useState(null)
+  const [wholePhoto, setWholePhoto] = useState(false)
+  const [crops, setCrops] = useState({})
+
+  // Crop each photo to the card once the AI says where the card is.
+  useEffect(() => {
+    cards.forEach((c, i) => {
+      const key = c.cardBox && JSON.stringify(c.cardBox)
+      if (!key || crops[i]?.key === key || !shots[i]?.dataUrl) return
+      cropToBox(shots[i].dataUrl, c.cardBox)
+        .then((url) => setCrops((cs) => ({ ...cs, [i]: { key, url } })))
+        .catch(() => {})
+    })
+  }, [cards])
+  const photo = (i) => crops[i]?.url || shots[i]?.dataUrl
   const started = useRef(false)
 
   useEffect(() => {
@@ -51,6 +65,7 @@ export default function Review() {
       const initial = results.map((r) => ({
         fields: r.error ? emptyContact() : r.fields,
         confidence: r.error ? 'check' : r.confidence,
+        cardBox: r.error ? null : r.cardBox || null,
         error: r.error || null,
         dupe: null,
         action: 'save',
@@ -71,7 +86,7 @@ export default function Review() {
     try {
       const r = await api.extract(shots[idx].b64, shots[idx].type)
       setCards((cs) => cs.map((c, i) => i === idx
-        ? { ...c, fields: r.fields, confidence: r.confidence, error: null } : c))
+        ? { ...c, fields: r.fields, confidence: r.confidence, cardBox: r.cardBox || null, error: null } : c))
     } catch (e) {
       setCards((cs) => cs.map((c, i) => i === idx ? { ...c, error: e.message } : c))
     }
@@ -143,11 +158,11 @@ export default function Review() {
             </span>
           </div>
           {shots[idx]?.dataUrl && (
-            <button onClick={() => setViewing(idx)} aria-label={`View card ${idx + 1} photo full screen`}
+            <button onClick={() => { setWholePhoto(false); setViewing(idx) }} aria-label={`View card ${idx + 1} photo full screen`}
               style={{ display: 'block', width: '100%', padding: 0, border: 0, background: 'var(--bg, transparent)',
                 marginBottom: 12, cursor: 'zoom-in',
                 ...(single ? { position: 'sticky', top: 0, zIndex: 2, paddingTop: 6, paddingBottom: 6 } : {}) }}>
-              <img src={shots[idx].dataUrl} alt={`Card ${idx + 1} photo`}
+              <img src={photo(idx)} alt={`Card ${idx + 1} photo`}
                 style={{ width: '100%', maxHeight: single ? '26vh' : 160, objectFit: 'contain',
                   borderRadius: 12, display: 'block', background: 'var(--surface)' }} />
             </button>
@@ -194,8 +209,16 @@ export default function Review() {
         <div role="dialog" aria-label="Card photo" onClick={() => setViewing(null)}
           style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,.92)',
             overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <img src={shots[viewing].dataUrl} alt={`Card ${viewing + 1} photo, full size`}
+          <img src={wholePhoto ? shots[viewing].dataUrl : photo(viewing)} alt={`Card ${viewing + 1} photo, full size`}
             style={{ maxWidth: 'none', width: '100%', height: 'auto' }} />
+          {crops[viewing] && (
+            <button onClick={(e) => { e.stopPropagation(); setWholePhoto((w) => !w) }}
+              style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+                padding: '10px 18px', borderRadius: 999, border: 0, fontSize: 14,
+                background: 'rgba(255,255,255,.18)', color: '#fff' }}>
+              {wholePhoto ? 'Show card only' : 'Show whole photo'}
+            </button>
+          )}
           <button onClick={() => setViewing(null)} aria-label="Close photo"
             style={{ position: 'fixed', top: 14, right: 14, width: 36, height: 36, borderRadius: 999,
               border: 0, background: 'rgba(255,255,255,.18)', color: '#fff', fontSize: 20 }}>×</button>
