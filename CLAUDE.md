@@ -1,6 +1,6 @@
 # card-scanner
 ## Claude Code Session Context
-## Last Updated: 2026-09-10
+## Last Updated: 2026-11-18
 
 ## Purpose
 Card scanner PWA. Snap or upload a business card photo, extract a contact, dedupe, export vCard.
@@ -22,14 +22,21 @@ Card scanner PWA. Snap or upload a business card photo, extract a contact, dedup
 - All 10 original tasks complete + verified.
 - 2026-09-10: PR #2 merged. Single mode now has separate "Take a photo" (camera) and
   "Upload from files" (picker) buttons; the + tab opens the picker when already on /scan.
+- 2026-11-18: Upload feedback. Capture shows "Preparing photo…" and an error box when a file
+  can't be opened (previously skipped silently). Review shows a per-card extraction error with
+  "Try again", and a save error. sw.js cache bumped to v3.
+- 2026-11-18: Settings has an "Update app" button (src/lib/update.js: refresh service worker,
+  clear caches, reload) and shows the build time (__BUILD_TIME__ defined in vite.config.js).
 
 ## Active Worktrees (if applicable)
 None.
 
 ## Known Issues or Blockers
 - Uploads accept images only. vCard (.vcf) and PDF imports are not supported.
-- Installed PWA can serve a cached build after a deploy; close fully and reopen, or bump the
-  cache name in public/sw.js.
+- HEIC/HEIF (iPhone) photos can't be decoded by Chrome/Firefox on Android or desktop. The app now
+  says so; converting them would need a library such as heic2any (not added).
+- Installed PWA can serve a cached build after a deploy; use Settings > Update app, close fully
+  and reopen, or bump the cache name in public/sw.js.
 
 ## Next Steps
 [Update at start of session]

@@ -60,4 +60,20 @@ describe('Review', () => {
     expect(content).toContain('Maya')
     expect(content).toContain('Leo')
   })
+
+  it('shows why a card failed and retries it', async () => {
+    api.extract.mockRejectedValueOnce(new Error('Could not parse card'))
+    renderWithShots([{ b64: 'x', type: 'image/jpeg' }])
+    expect(await screen.findByText(/did not look like a business card/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByDisplayValue('Maya')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('shows an error when saving fails', async () => {
+    api.createContacts.mockRejectedValueOnce(new Error('Request failed (500)'))
+    renderWithShots([{ b64: 'x', type: 'image/jpeg' }])
+    fireEvent.click(await screen.findByRole('button', { name: /save 1/i }))
+    expect(await screen.findByText(/Could not save to your contact list/)).toBeInTheDocument()
+  })
 })
